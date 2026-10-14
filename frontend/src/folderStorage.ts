@@ -1,5 +1,5 @@
 type PermissionOptions = { mode: "readwrite" };
-type WritableFile = { write(data: string): Promise<void>; close(): Promise<void> };
+type WritableFile = { write(data: string): Promise<void>; close(): Promise<void>; abort?(): Promise<void> };
 type WishrFileHandle = { getFile(): Promise<File>; createWritable(): Promise<WritableFile> };
 export type WishrDirectoryHandle = {
   readonly name: string;
@@ -80,6 +80,17 @@ export async function readWishlistFile(handle: WishrDirectoryHandle): Promise<un
 export async function writeWishlistFile(handle: WishrDirectoryHandle, wishlist: unknown) {
   const fileHandle = await handle.getFileHandle(WISHLIST_FILE, { create: true });
   const writable = await fileHandle.createWritable();
-  await writable.write(`${JSON.stringify(wishlist, null, 2)}\n`);
-  await writable.close();
+  try {
+    await writable.write(`${JSON.stringify(wishlist, null, 2)}\n`);
+    await writable.close();
+  } catch (error) {
+    try {
+      await writable.abort?.();
+    } catch (abortError) {
+      const writeMessage = error instanceof Error ? error.message : String(error);
+      const abortMessage = abortError instanceof Error ? abortError.message : String(abortError);
+      throw new Error(`Wishlist write failed (${writeMessage}); the incomplete write could not be cancelled (${abortMessage}).`);
+    }
+    throw error;
+  }
 }

@@ -71,24 +71,32 @@ export async function improveMarkdownImport(baseUrl: string, model: string, file
   const payload = await response.json() as { message?: { content?: string }; error?: string };
   const content = payload.message?.content;
   if (!content) throw new Error(payload.error || "Ollama returned an empty response. The local results are still available.");
+  return parseImprovedMarkdown(content, "Ollama", filename, fallback);
+}
+
+export function parseImprovedMarkdown(content: string, providerName: string, filename: string, fallback: ImportResult): ImportResult {
   let parsed: { is_wishlist?: boolean; groups?: Array<{ name?: string; parent_name?: string | null }>; items?: Array<{ name?: string; group_name?: string; subgroup?: string; notes?: string }> };
   try { parsed = JSON.parse(content); }
-  catch { throw new Error("Ollama did not return a valid structured result. The local results are still available."); }
+  catch { throw new Error(`${providerName} did not return a valid structured result. The local results are still available.`); }
   if (!parsed.is_wishlist || !Array.isArray(parsed.items) || !parsed.items.length) {
-    return { filename, kind: "notes", groups: [], items: [], selected: false, message: "Ollama found notes or research rather than clear purchase items." };
+    return { filename, kind: "notes", groups: [], items: [], selected: false, message: `${providerName} found notes or research rather than clear purchase items.` };
   }
 
   const groupIdByName = new Map<string, string>();
   const groups: ImportResult["groups"] = [];
-  const addGroup = (name: string, parentName?: string | null) => {
+  const idPrefix = providerName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const addGroup = (name: string, parentName?: string | null, path = new Set<string>()) => {
     const cleanName = name.trim();
     if (!cleanName) return "";
     const key = normalizeName(cleanName);
+    if (path.has(key)) throw new Error(`${providerName} returned a cyclic group hierarchy around "${cleanName}".`);
     const existing = groupIdByName.get(key);
     if (existing) return existing;
+    const nextPath = new Set(path);
+    nextPath.add(key);
     let parentId: string | undefined;
-    if (parentName?.trim() && normalizeName(parentName) !== key) parentId = addGroup(parentName, null) || undefined;
-    const id = `ollama-${slug(cleanName)}-${groups.length + 1}`;
+    if (parentName?.trim() && normalizeName(parentName) !== key) parentId = addGroup(parentName, null, nextPath) || undefined;
+    const id = `${idPrefix}-${slug(cleanName)}-${groups.length + 1}`;
     groups.push({ id, name: cleanName, ...(parentId ? { parentId } : {}) });
     groupIdByName.set(key, id);
     return id;
@@ -106,7 +114,7 @@ export async function improveMarkdownImport(baseUrl: string, model: string, file
     const localItem = localByName.get(normalizeName(name));
     const modelNotes = candidate.notes?.trim() || "";
     return [{
-      id: `ollama-${slug(filename)}-${index + 1}-${crypto.randomUUID().slice(0, 6)}`,
+      id: `${idPrefix}-${slug(filename)}-${index + 1}-${crypto.randomUUID().slice(0, 6)}`,
       groupId,
       subgroup: candidate.subgroup?.trim() || localItem?.subgroup || "",
       name,
@@ -126,6 +134,6 @@ export async function improveMarkdownImport(baseUrl: string, model: string, file
     groups,
     items,
     selected: true,
-    message: `Ollama detected ${groups.length} group${groups.length === 1 ? "" : "s"} and ${items.length} item${items.length === 1 ? "" : "s"}. Review before importing; prices and links are kept only when the local parser found them.`,
+    message: `${providerName} detected ${groups.length} group${groups.length === 1 ? "" : "s"} and ${items.length} item${items.length === 1 ? "" : "s"}. Review before importing; prices and links are kept only when the local parser found them.`,
   };
 }

@@ -67,7 +67,7 @@ function groupTitle(filename: string, markdown: string) {
   return raw.replace(/\s+[—–-]\s+(?:parts?\s*&\s*budget|parts?\s*list|wishlist|itemlist).*$/i, "").trim() || "Imported wishlist";
 }
 
-function csvRows(text: string) {
+function csvRows(text: string, delimiter: string) {
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = "";
@@ -77,7 +77,7 @@ function csvRows(text: string) {
     if (char === '"') {
       if (quoted && text[i + 1] === '"') { cell += '"'; i += 1; }
       else quoted = !quoted;
-    } else if (char === "," && !quoted) {
+    } else if (char === delimiter && !quoted) {
       row.push(cell); cell = "";
     } else if ((char === "\n" || char === "\r") && !quoted) {
       if (char === "\r" && text[i + 1] === "\n") i += 1;
@@ -86,13 +86,17 @@ function csvRows(text: string) {
       row = [];
     } else cell += char;
   }
+  if (quoted) throw new Error("Malformed CSV: a quoted value is missing its closing quote.");
   row.push(cell);
   if (row.some((part) => part.trim())) rows.push(row);
   return rows;
 }
 
 function parseCsv(filename: string, text: string): ImportResult {
-  const rows = csvRows(text);
+  const cleanText = text.replace(/^\uFEFF/, "");
+  const header = cleanText.split(/\r?\n/, 1)[0] || "";
+  const delimiter = header.split(";").length > header.split(",").length ? ";" : ",";
+  const rows = csvRows(cleanText, delimiter);
   if (rows.length < 2) return { filename, kind: "notes", groups: [], items: [], selected: false, message: "No table rows found." };
   const headers = rows[0].map((header) => header.trim().toLowerCase().replace(/[\s-]+/g, "_"));
   const index = (...names: string[]) => headers.findIndex((header) => names.includes(header));
@@ -120,9 +124,17 @@ function parseCsv(filename: string, text: string): ImportResult {
     groupsByName.set(normalized, group);
     const notes = get(notesIndex);
     const rawPrice = get(priceIndex);
-    const parsedPrice = parseAmount(rawPrice);
-    const unverified = Boolean(parsedPrice != null && currencyWarning.test(notes));
-    const qty = parseAmount(get(qtyIndex)) || 1;
+    const foreignCurrency = /(?:US\$|CA\$|AU\$|\$|£|¥|zł|\b(?:USD|GBP|CHF|CAD|AUD|PLN|JPY)\b)/i.test(rawPrice);
+    const numericPrice = rawPrice
+      .replace(/\b(?:EUR|USD|GBP|CHF|CAD|AUD|PLN|JPY)\b/gi, "")
+      .replace(/(?:US|CA|AU)\$/gi, "")
+      .replace(/[€$£¥]|zł/gi, "");
+    const parsedPrice = parseAmount(numericPrice);
+    const validPrice = parsedPrice != null && parsedPrice >= 0 ? parsedPrice : null;
+    const unverified = Boolean(validPrice != null && (foreignCurrency || currencyWarning.test(notes)));
+    const parsedQuantity = parseAmount(get(qtyIndex));
+    const qty = parsedQuantity != null && Number.isSafeInteger(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
+    const priceNote = rawPrice && validPrice == null ? `Price omitted because "${rawPrice}" is not a valid non-negative amount.` : "";
     items.push({
       id: `csv-${slug(filename)}-${get(index("id")) || rowNumber + 1}`,
       groupId: group.id,
@@ -130,14 +142,14 @@ function parseCsv(filename: string, text: string): ImportResult {
       name,
       brandModel: get(brandIndex),
       quantity: qty,
-      priceEur: unverified ? null : parsedPrice,
-      unverifiedAmount: unverified ? parsedPrice : null,
+      priceEur: unverified ? null : validPrice,
+      unverifiedAmount: unverified ? validPrice : null,
       currencyUnverified: unverified,
       status: get(statusIndex),
       priority: get(priorityIndex),
       blockedBy: get(blockedIndex),
       link: get(linkIndex),
-      notes,
+      notes: [notes, priceNote].filter(Boolean).join(" "),
     });
   }
   const groups = [...groupsByName.values()];
@@ -268,9 +280,23 @@ function safeUrl(value: string) {
 
 export async function parseImportFiles(files: File[]): Promise<ImportResult[]> {
   return Promise.all(files.map(async (file) => {
-    const text = await file.text();
-    if (/\.(?:csv)$/i.test(file.name)) return parseCsv(file.name, text);
-    if (/\.(?:md|markdown)$/i.test(file.name) || file.type === "text/markdown") return parseMarkdown(file.name, text);
-    return { filename: file.name, kind: "unsupported", groups: [], items: [], selected: false, message: "Choose a Markdown or CSV file." };
+    if (file.size > 5 * 1024 * 1024) {
+      return { filename: file.name, kind: "unsupported", groups: [], items: [], selected: false, message: "This file is larger than the 5 MB import limit." };
+    }
+    try {
+      const text = await file.text();
+      if (/\.(?:csv)$/i.test(file.name)) return parseCsv(file.name, text);
+      if (/\.(?:md|markdown)$/i.test(file.name) || file.type === "text/markdown") return parseMarkdown(file.name, text);
+      return { filename: file.name, kind: "unsupported", groups: [], items: [], selected: false, message: "Choose a Markdown or CSV file." };
+    } catch (error) {
+      return {
+        filename: file.name,
+        kind: "unsupported",
+        groups: [],
+        items: [],
+        selected: false,
+        message: error instanceof Error ? `Could not parse this file: ${error.message}` : "Could not read or parse this file.",
+      };
+    }
   }));
 }
