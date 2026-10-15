@@ -2,6 +2,8 @@
 
 A personal, local-first wishlist with a quiet GitHub-inspired interface and a restrained green accent. Organize ideas into nested collections, keep EUR estimates, search and filter your list, and import Markdown or CSV files.
 
+> Lees dit in het Nederlands: [Nederlandstalige README](README.nl.md).
+
 ## What is this?
 
 Troved is a wishlist that runs in your browser. Your wishlist stays in your browser storage or in a folder you choose; there is no Troved account or wishlist database. An optional small server adds AI-assisted Markdown import through OpenAI, Anthropic, Google Gemini, or a local Ollama instance, but the core app works without it.
@@ -17,6 +19,7 @@ Troved is a wishlist that runs in your browser. Your wishlist stays in your brow
 - Light and dark themes, applied before first paint so dark-mode users see no light flash
 - Fonts bundled via Fontsource (DM Sans, Manrope); no webfont CDN is contacted
 - Keyboard navigation, dialog focus trapping, and reduced-motion support
+- Tags and priority rating per item for cross-cutting organization
 
 ## Keyboard shortcuts
 
@@ -51,6 +54,22 @@ flowchart LR
 ```
 
 The server serves the production frontend build (`frontend/dist`, same origin) and exposes `/api/health` plus the `/api/ai/*` endpoints. It has no wishlist database.
+
+## AI-Assisted Development
+
+This project was developed with extensive use of **ChatGPT and OpenAI Codex** as AI development tools.
+
+I used ChatGPT to help define the project scope, architecture, features, technical decisions, and development approach. **OpenAI Codex was then used as the coding agent to implement and iterate on the application.**
+
+I was responsible for:
+
+- defining the requirements and desired functionality
+- making architectural and technical decisions
+- directing the implementation through iterative prompts
+- testing the application and integrations
+- reviewing and correcting the generated implementation
+- debugging issues during development
+- setting up the Git/GitHub workflow and project documentation
 
 ## Installation
 
@@ -113,11 +132,14 @@ Explicit EUR prices are used in totals. Non-EUR or uncertain amounts remain mark
 
 The server reads its provider keys from its private environment. Copy `.env.example` to `.env` in the project root, keep the file private, and add a key only for a provider you intend to use.
 
-| Variable | Purpose |
-| --- | --- |
-| `OPENAI_API_KEY` | Enables OpenAI models for import assistance |
-| `ANTHROPIC_API_KEY` | Enables Anthropic models for import assistance |
-| `GEMINI_API_KEY` | Enables Google Gemini models for import assistance |
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `PORT` | `3000` | Server port |
+| `HOST` | `0.0.0.0` | Server bind address |
+| `OPENAI_API_KEY` | — | Enables OpenAI models for import assistance |
+| `ANTHROPIC_API_KEY` | — | Enables Anthropic models for import assistance |
+| `GEMINI_API_KEY` | — | Enables Google Gemini models for import assistance |
+| `TROVED_SAVE_DIR` | — | Enables server-side wishlist saving. Set to a directory path (e.g. a mounted NAS or SMB share) to save `wishlist.json` on the server. |
 
 Then, in Troved, open **Preferences → Cloud AI models**, refresh models, choose a provider and model, and select **Use for imports**.
 
@@ -126,6 +148,18 @@ The frontend never receives API keys. Never paste credentials into chat or brows
 ### Theme
 
 The theme is remembered in `wishr-theme` (or follows the operating system when nothing is saved). Use the sun/moon button in the header or **Preferences → Appearance** to switch.
+
+## Server-side wishlist saving (NAS / SMB)
+
+Troved can optionally save your wishlist to a directory on the server instead of (or in addition to) browser storage. This is useful for keeping a central copy on a NAS or SMB share.
+
+1. Mount your NAS or SMB share on the server at a path such as `/mnt/nas/troved`.
+2. Add `TROVED_SAVE_DIR=/mnt/nas/troved` to the server's `.env` file.
+3. Restart the server: `docker compose up -d --build`.
+4. Open **Settings → Save to server (NAS / SMB)** and click **Save to server**.
+
+The server writes `wishlist.json` to the configured directory. Only the Markdown you explicitly choose to **Improve** is sent to AI providers; the wishlist file itself never leaves your server.
+
 
 ## Your data and backups
 

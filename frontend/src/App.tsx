@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { ItemDialog, GroupDialog, ImportDialog, SettingsDialog, SettingsError, SettingsSection } from "./Dialogs";
 import { fetchOllamaModels, improveMarkdownImport, normalizeOllamaUrl, type OllamaModel } from "./ollama";
-import { fetchCloudModels, fetchCloudProviders, improveWithCloudModel, type CloudAiProvider } from "./cloudAi";
+import { fetchCloudModels, fetchCloudProviders, improveWithCloudModel, fetchSaveStatus, saveWishlistToServer, type CloudAiProvider } from "./cloudAi";
 import { loadDirectoryHandle, pickWishlistDirectory, readWishlistFile, removeDirectoryHandle, saveDirectoryHandle, supportsDirectoryPicker, type WishrDirectoryHandle, writeWishlistFile } from "./folderStorage";
 import { downloadWishlistJson, downloadWishlistZip } from "./zipExport";
 import { parseImportFiles, type ImportResult } from "./importer";
@@ -115,6 +115,9 @@ function App() {
   const [cloudBusy, setCloudBusy] = useState(false);
   const [cloudMessage, setCloudMessage] = useState("Checking the Troved AI server…");
   const [cloudReady, setCloudReady] = useState(false);
+  const [serverSaveConfigured, setServerSaveConfigured] = useState(false);
+  const [serverSaveBusy, setServerSaveBusy] = useState(false);
+  const [serverSaveMessage, setServerSaveMessage] = useState("");
   const [toast, setToast] = useState<{ message: string; undo?: () => void } | null>(null);
   const [itemsToShow, setItemsToShow] = useState(30);
   const actionRevisionRef = useRef(0);
@@ -175,6 +178,22 @@ function App() {
       }
     });
   }, [folderName]);
+
+  const saveWishlistToServerFn = useCallback(async () => {
+    if (!serverSaveConfigured) return;
+    setServerSaveBusy(true);
+    setServerSaveMessage("Saving to server…");
+    try {
+      await saveWishlistToServer(wishlist);
+      setServerSaveBusy(false);
+      setServerSaveMessage("Saved to server.");
+      setTimeout(() => setServerSaveMessage(""), 3000);
+    } catch (error) {
+      setServerSaveBusy(false);
+      setServerSaveMessage(error instanceof Error ? error.message : "Could not save to the server.");
+      setTimeout(() => setServerSaveMessage(""), 5000);
+    }
+  }, [serverSaveConfigured, wishlist]);
 
   const commitWishlist = useCallback((next: Wishlist, undoMessage?: string) => {
     const before = wishlistRef.current;
@@ -379,6 +398,18 @@ function App() {
       if (!alive) return;
       setCloudReady(true);
       setCloudMessage(error instanceof Error ? error.message : "The Troved AI server is not available.");
+    });
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    fetchSaveStatus().then((configured) => {
+      if (!alive) return;
+      setServerSaveConfigured(configured);
+    }).catch(() => {
+      if (!alive) return;
+      setServerSaveConfigured(false);
     });
     return () => { alive = false; };
   }, []);
@@ -975,7 +1006,7 @@ function App() {
                   const price = item.priceEur == null || item.currencyUnverified ? null : item.priceEur * (item.quantity || 1);
                   const converted = price == null ? null : (currency !== "EUR" && rate?.rate ? price * rate.rate : price);
                   return <article className="item-card" data-reveal key={item.id} style={{ "--reveal-delay": `${Math.min(index * 65, 325)}ms` } as React.CSSProperties}>
-                    <div className="item-card-top"><span className={`item-symbol ${item.currencyUnverified ? "unverified" : ""}`}><ShoppingBag size={17} /></span><div className="item-badges">{item.priority && <span className={`priority-tag ${item.priority.toLowerCase()}`}>{item.priority}</span>}{item.status && item.status !== "wanted" && <span className="status-tag">{item.status}</span>}</div>
+                    <div className="item-card-top"><span className={`item-symbol ${item.currencyUnverified ? "unverified" : ""}`}><ShoppingBag size={17} /></span><div className="item-badges">{item.priority && <span className={`priority-tag ${item.priority.toLowerCase()}`}>{item.priority}</span>}{item.tags?.length && item.tags.map((tag) => <span key={tag} className="tag-tag">{tag}</span>)}{item.status && item.status !== "wanted" && <span className="status-tag">{item.status}</span>}</div>
                       <details className="item-more"><summary aria-label={`Actions for ${item.name}`}><MoreHorizontal size={17} /></summary><div className="group-menu"><button disabled={Boolean(cacheIssue)} onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); setItemEditor(item); }}><Pencil size={14} /> Edit idea</button><button disabled={Boolean(cacheIssue)} className="danger-text" onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); removeItem(item); }}><Trash2 size={14} /> Remove…</button></div></details>
                     </div>
                     <h3>{item.name}</h3>
@@ -1054,6 +1085,16 @@ function App() {
           <SettingsError>{saveMessage}</SettingsError>
           {!supportsDirectoryPicker() && <p className="settings-copy">This browser cannot write directly to a chosen folder. Restore your <code>wishlist.json</code>, then download the updated file after editing and save it back to your folder.</p>}
           <div className="settings-actions theme-settings"><span>Appearance</span><button className="secondary-btn" onClick={() => setTheme((current) => current === "light" ? "dark" : "light")}>{theme === "light" ? <Moon size={15} /> : <Sun size={15} />}{theme === "light" ? "Use dark theme" : "Use light theme"}</button></div>
+        </SettingsSection>
+        <SettingsSection icon={<ShieldCheck size={17} />} title="Save to server (NAS / SMB)" description={serverSaveConfigured ? "Server-side saving is configured. Your wishlist can be saved to the server's storage directory (e.g. a mounted NAS or SMB share)." : "Not configured. Set TROVED_SAVE_DIR on the Troved server to enable saving to a server directory."}>
+          <p className="settings-copy">When enabled, clicking Save will write your current wishlist to <code>wishlist.json</code> in the server's configured directory. This directory can be a mounted NAS or SMB share, letting you keep a central copy on your network storage.</p>
+          <div className="settings-actions">
+            {serverSaveConfigured && !serverSaveBusy && <button className="primary-btn" onClick={() => void saveWishlistToServerFn()}<ShieldCheck size={15} /> Save to server</button>}
+            {serverSaveConfigured && serverSaveBusy && <button className="primary-btn" disabled>Saving…</button>}
+            {!serverSaveConfigured && <button className="secondary-btn" disabled>Configure TROVED_SAVE_DIR on the server</button>}
+            {serverSaveMessage && <span className="settings-copy">{serverSaveMessage}</span>}
+          </div>
+          <SettingsError>{serverSaveBusy ? "" : serverSaveMessage}</SettingsError>
         </SettingsSection>
         <SettingsSection icon={<Sparkles size={17} />} title="Cloud AI models" description={cloudProviders.some((provider) => provider.configured) ? `${cloudProviders.filter((provider) => provider.configured).length} provider${cloudProviders.filter((provider) => provider.configured).length === 1 ? "" : "s"} configured on your server` : "Optional OpenAI, Anthropic, and Google models."}>
           <p className="settings-copy">Provider API keys stay in the private Troved server environment and are never sent to this browser. Only Markdown files you choose to improve are sent to the selected provider; review results before importing.</p>

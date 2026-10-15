@@ -1,11 +1,12 @@
-import { createReadStream } from "node:fs";
-import { access, stat } from "node:fs/promises";
+import { createReadStream, writeFile } from "node:fs";
+import { access, stat, mkdir } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const staticRoot = resolve(process.env.TROVED_STATIC_DIR || resolve(root, "frontend", "dist"));
+const saveRoot = process.env.TROVED_SAVE_DIR ? resolve(process.env.TROVED_SAVE_DIR) : null;
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "0.0.0.0";
 const requestLimit = 32_000;
@@ -293,6 +294,29 @@ export function createAppServer() {
           checkRateLimit(request);
           const result = await improveWithProvider(await readJson(request));
           sendJson(response, 200, result);
+          return;
+        }
+        if (request.method === "GET" && pathname === "/api/wishlist/save-status") {
+          sendJson(response, 200, { configured: Boolean(saveRoot) });
+          return;
+        }
+        if (request.method === "POST" && pathname === "/api/wishlist/save") {
+          if (!saveRoot) throw new HttpError(503, "Server-side wishlist saving is not configured. Set TROVED_SAVE_DIR on the server.");
+          checkRateLimit(request);
+          const payload = await readJson(request);
+          if (!payload || typeof payload !== "object" || Array.isArray(payload) || typeof payload.wishlist !== "object") {
+            throw new HttpError(400, "Request body must include a wishlist object.");
+          }
+          try {
+            await mkdir(saveRoot, { recursive: true });
+            const file = resolve(saveRoot, "wishlist.json");
+            if (file !== saveRoot && !file.startsWith(saveRoot + sep)) throw new HttpError(403, "Save path escapes the configured save directory.");
+            await writeFile(file, `${JSON.stringify(payload.wishlist, null, 2)}\n`);
+            sendJson(response, 200, { saved: true, path: file });
+          } catch (error) {
+            if (error instanceof HttpError) throw error;
+            throw new HttpError(500, `Could not save wishlist to server: ${error instanceof Error ? error.message : String(error)}`);
+          }
           return;
         }
         throw new HttpError(404, "API route not found.");

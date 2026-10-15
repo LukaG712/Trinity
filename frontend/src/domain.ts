@@ -14,6 +14,7 @@ export type WishlistItem = {
   blockedBy?: string;
   link?: string;
   notes?: string;
+  tags?: string[];
 };
 export type Wishlist = { version: number; groups: WishlistGroup[]; items: WishlistItem[] };
 export type Rate = { rate: number; date: string };
