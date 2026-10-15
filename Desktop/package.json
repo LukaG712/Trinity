@@ -1,0 +1,60 @@
+{
+  "name": "troved-desktop",
+  "productName": "Troved",
+  "version": "1.0.0",
+  "description": "Troved - personal wishlist (portable desktop app)",
+  "main": "electron/main.js",
+  "author": "",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64 --ia32",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.troved.desktop",
+    "productName": "Troved",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "../frontend/dist/**/*",
+      "../server/index.mjs",
+      "!**/node_modules/**/*"
+    ],
+    "extraMetadata": {
+      "main": "electron/main.js"
+    },
+    "asar": false,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        }
+      ],
+      "sign": null,
+      "signAndEditExecutable": false,
+      "signDlls": false
+    },
+    "publish": null
+  },
+  "allowScripts": {
+    "electron@28.3.3": true
+  }
+}

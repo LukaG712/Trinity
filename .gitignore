@@ -6,3 +6,13 @@ frontend/dist/
 frontend/tsconfig.tsbuildinfo
 .vite/
 *.tsbuildinfo
+# Electron builder output - never commit installers / unpacked apps (>100MB, GitHub rejects)
+Desktop/release/
+Desktop/dist/
+*.exe
+*.blockmap
+*.nsis.*
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -264,9 +264,21 @@ npm run build
 - Light and dark themes are included.
 - The browser tab shows a built-in Troved favicon (dark tile with a green dot, matching the header logo).
 
+## Desktop app (portable .exe)
+
+A standalone Windows desktop app is available — no browser tabs, no PowerShell, no installation required.
+
+| File | Description |
+|------|-------------|
+| `Troved Desktop/release/Troved 1.0.0.exe` | Portable executable — just double-click and run |
+| `Troved Desktop/release/Troved Setup 1.0.0.exe` | Installer with Start Menu shortcut |
+
+The desktop app bundles the frontend and the Node.js server together. Launching it opens Troved in its own native window. Your wishlist stays in browser storage or a folder you choose, exactly like the web version.
+
 ## Project structure
 
 ```text
 frontend/   Vite application (wishlist UI, local import parser, backups)
 server/     Optional Node.js server: serves frontend/dist, /api/health, /api/ai/*, and endpoint tests
+Desktop/    Electron wrapper producing portable .exe and installer
 ```
