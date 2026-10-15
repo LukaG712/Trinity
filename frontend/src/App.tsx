@@ -2,7 +2,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, ty
 import {
   ArrowDown, ArrowDownToLine, ArrowUpRight, Check, ChevronDown, CircleHelp,
   Coins, Compass, FileUp, FolderOpen, FolderPlus, Heart, Layers3, Link2,
-  Menu, Moon, MoreHorizontal, Pencil, Plus, Search, Settings2, ShieldCheck,
+  Moon, MoreHorizontal, Pencil, Plus, Search, Settings2, ShieldCheck,
   ShoppingBag, Sparkles, Sun, Trash2, Undo2, X,
 } from "lucide-react";
 import { ItemDialog, GroupDialog, ImportDialog, SettingsDialog, SettingsError, SettingsSection } from "./Dialogs";
@@ -76,10 +76,13 @@ function App() {
   const [rate, setRate] = useState<Rate | null>(() => readRate(localStorage.getItem("wishr-currency") || "EUR"));
   const [rateMessage, setRateMessage] = useState("");
   const [theme, setTheme] = useState<"light" | "dark">(() => {
-    const savedTheme = localStorage.getItem("wishr-theme");
-    return savedTheme === "dark" || savedTheme === "light"
-      ? savedTheme
-      : window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    try {
+      const savedTheme = localStorage.getItem("wishr-theme");
+      if (savedTheme === "dark" || savedTheme === "light") return savedTheme;
+    } catch {
+      // Private-mode storage access can throw; fall through to the OS preference.
+    }
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   });
   const [folderName, setFolderName] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("loading");
@@ -88,7 +91,8 @@ function App() {
   const cacheIssueRef = useRef("");
   const [folderBusy, setFolderBusy] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collectionsOpen, setCollectionsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [itemEditor, setItemEditor] = useState<WishlistItem | null>(null);
   const [newItemOpen, setNewItemOpen] = useState(false);
   const [groupEditor, setGroupEditor] = useState<WishlistGroup | null | undefined>(undefined);
@@ -112,7 +116,6 @@ function App() {
   const [cloudMessage, setCloudMessage] = useState("Checking the Troved AI server…");
   const [cloudReady, setCloudReady] = useState(false);
   const [toast, setToast] = useState<{ message: string; undo?: () => void } | null>(null);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [itemsToShow, setItemsToShow] = useState(30);
   const actionRevisionRef = useRef(0);
   const toastTimerRef = useRef<number | null>(null);
@@ -264,9 +267,28 @@ function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#0d1117" : "#f6f8f5");
-    localStorage.setItem("wishr-theme", theme);
+    try {
+      localStorage.setItem("wishr-theme", theme);
+    } catch {
+      // The selected theme still applies for this session.
+    }
   }, [theme]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = (event: MediaQueryListEvent) => {
+      try {
+        if (localStorage.getItem("wishr-theme")) return;
+      } catch {
+        // Without storage there is no saved preference to respect; follow the OS.
+      }
+      setTheme(event.matches ? "dark" : "light");
+    };
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
 
   useEffect(() => {
     if (!("IntersectionObserver" in window) || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -295,6 +317,8 @@ function App() {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         searchRef.current?.focus();
+      } else if (event.key === "Escape" && collectionsOpen) {
+        setCollectionsOpen(false);
       } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "i" && !typing) {
         event.preventDefault();
         setNewItemOpen(true);
@@ -302,6 +326,13 @@ function App() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
+  }, [collectionsOpen]);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => () => {
@@ -841,8 +872,8 @@ function App() {
       const childGroups = wishlist.groups.some((entry) => entry.parentId === group.id);
       return (
         <div className={`nav-group ${selectedGroup === group.id ? "active" : ""}`} key={group.id} style={{ "--depth": depth } as React.CSSProperties}>
-          <button className="group-link" onClick={() => { setSelectedGroup(group.id); setMobileNavOpen(false); }} title={`${group.name} · ${stats.count} ${stats.count === 1 ? "idea" : "ideas"} · ${displayMoney(stats.total)} estimated total`}>
-            <span className="group-glyph"><span /></span><span className="group-link-name">{group.name}</span><small>{stats.count}</small>
+          <button className="group-link" onClick={() => { setSelectedGroup(group.id); setCollectionsOpen(false); }} title={`${group.name} · ${stats.count} ${stats.count === 1 ? "idea" : "ideas"} · ${displayMoney(stats.total)} estimated total`}>
+            <span className="group-glyph"><span /></span><span className="group-link-name">{group.name}</span><small key={stats.count}>{stats.count}</small>
           </button>
           <details className="group-actions"><summary aria-label={`Manage ${group.name}`}><MoreHorizontal size={16} /></summary><div className="group-menu">
             <button onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); setGroupEditor(group); }}>Edit group</button>
@@ -856,38 +887,56 @@ function App() {
 
   return (
     <div className="app-shell">
-      {mobileNavOpen && <button className="sidebar-scrim" onClick={() => setMobileNavOpen(false)} aria-label="Close navigation" />}
-      <aside className={`sidebar ${mobileNavOpen ? "mobile-open" : ""}`} aria-label="Wishlist navigation">
-        <button className="quick-add" onClick={addNewItem} disabled={!wishlist.groups.length || Boolean(cacheIssue)} title={!wishlist.groups.length ? "Create a group first" : "Add an item (Ctrl/Cmd + I)"}><Plus size={17} /> Add to wishlist <kbd>⌘ I</kbd></button>
-        <div className="nav-label">YOUR SPACE</div>
-        <button className={`all-items-link ${selectedGroup === "all" ? "selected" : ""}`} onClick={() => { setSelectedGroup("all"); setMobileNavOpen(false); }}>
-          <Layers3 size={16} /><span>All ideas</span><small>{wishlist.items.length}</small>
-        </button>
-        <div className="nav-section-heading"><span>COLLECTIONS</span><span>{wishlist.groups.length}</span></div>
-        <nav className="group-tree" aria-label="Wishlist groups">{renderGroupTree()}</nav>
-        <button className="add-group-link" onClick={() => setGroupEditor(null)} disabled={Boolean(cacheIssue)}><FolderPlus size={15} /> Create a group</button>
-        <div className="sidebar-bottom">
-          <button className="settings-link" onClick={() => { setSettingsOpen(true); setMobileNavOpen(false); }}><Settings2 size={16} /><span>Preferences</span><ArrowUpRight size={14} /></button>
-          <p className="privacy-note"><ShieldCheck size={13} /> Stored on this device.</p>
-        </div>
-      </aside>
 
       <main className="main-area">
-        <header className="topbar">
-          <div className="topbar-leading">
-            <button className="icon-btn mobile-menu" onClick={() => setMobileNavOpen(true)} aria-label="Open navigation"><Menu size={19} /></button>
-            <a className="brand" href="#" onClick={(event) => { event.preventDefault(); setSelectedGroup("all"); }}>
-              <span className="brand-mark"><span /></span><span>troved<span className="brand-period">.</span></span>
-            </a>
-            <span className="crumb"><span>/</span> <b>{selectedGroupData?.name || "Wishlist"}</b></span>
+        <header className={`topbar ${scrolled ? "scrolled" : ""}`}>
+          <div className="topbar-left">
+            <button type="button" className="topbar-logo" onClick={() => { setSelectedGroup("all"); setCollectionsOpen(false); }} aria-label="Troved home">
+              <span className="brand-symbol" aria-hidden="true"><span /></span>
+            </button>
+            <span className="topbar-brand">troved<span className="brand-period">.</span></span>
           </div>
-          <div className="topbar-actions">
-            <label className="search-field header-search"><Search size={16} /><input ref={searchRef} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search wishlist" aria-label="Search your wishlist" /><kbd>⌘ K</kbd>{search && <button onClick={() => setSearch("")} aria-label="Clear search"><X size={14} /></button>}</label>
+          <nav className="view-switch" aria-label="Workspace">
+            <button type="button" className={`collections-tab ${collectionsOpen ? "open" : ""}`} aria-expanded={collectionsOpen} onClick={() => setCollectionsOpen((v) => !v)}>
+              <Layers3 size={14} /><span>Collections</span><ChevronDown size={13} className="tab-caret" />
+            </button>
+          </nav>
+          
+          <div className="topbar-right">
+            <label className="search-field header-search"><Search size={16} /><input ref={searchRef} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search wishlist" aria-label="Search your wishlist" title="Press ⌘ K to focus search" /><kbd>⌘ K</kbd>{search && <button onClick={() => setSearch("")} aria-label="Clear search"><X size={14} /></button>}</label>
             <label className="currency-select"><Coins size={15} /><select value={currency} onChange={(event) => setCurrency(event.target.value)} aria-label="Display currency">{currencies.map((entry) => <option key={entry.iso_code} value={entry.iso_code}>{entry.iso_code}</option>)}</select><ChevronDown size={13} /></label>
             <button className="icon-btn theme-toggle" onClick={() => setTheme((current) => current === "light" ? "dark" : "light")} aria-label={`Switch to ${theme === "light" ? "dark" : "light"} theme`} title="Change theme">{theme === "light" ? <Moon size={17} /> : <Sun size={17} />}</button>
             <span className={`save-pill ${saveState}`}><i />{saveLabel}</span>
+            <button className="icon-btn" onClick={() => { setSettingsOpen(true); setCollectionsOpen(false); }} aria-label="Open preferences" title="Preferences"><Settings2 size={17} /></button>
           </div>
         </header>
+        {collectionsOpen && <div className="mega-backdrop" onClick={() => setCollectionsOpen(false)} />}
+        <div className={`mega-menu ${collectionsOpen ? "open" : ""}`}>
+          <div className="mega-panel"><div className="mega-menu-inner">
+            <aside className="mega-aside">
+              <button className="quick-add" onClick={() => { addNewItem(); setCollectionsOpen(false); }} disabled={!wishlist.groups.length || Boolean(cacheIssue)}><Plus size={17} /> Add to wishlist <kbd>CTRL I</kbd></button>
+              <div className="nav-label">YOUR SPACE</div>
+              <button className={`all-items-link ${selectedGroup === "all" ? "selected" : ""}`} onClick={() => { setSelectedGroup("all"); setCollectionsOpen(false); }}><Layers3 size={16} /><span>All ideas</span><small key={wishlist.items.length}>{wishlist.items.length}</small></button>
+              <div className="nav-section-heading"><span>COLLECTIONS</span><span key={wishlist.groups.length}>{wishlist.groups.length}</span></div>
+              <nav className="group-tree mega-tree" aria-label="Wishlist groups">{renderGroupTree()}</nav>
+              <button className="add-group-link" onClick={() => { setGroupEditor(null); setCollectionsOpen(false); }} disabled={Boolean(cacheIssue)}><FolderPlus size={15} /> Create a group</button>
+              <div className="mega-footer">
+                <button className="settings-link" onClick={() => { setSettingsOpen(true); setCollectionsOpen(false); }}><Settings2 size={16} /><span>Preferences</span><ArrowUpRight size={14} /></button>
+                <p className="privacy-note"><ShieldCheck size={13} /> Stored on this device.</p>
+              </div>
+            </aside>
+            <div className="mega-main">
+              <div className="mega-label"><span>QUICK ACTIONS</span></div>
+              <div className="mega-actions">
+                <button type="button" className="mega-tile" onClick={() => { addNewItem(); setCollectionsOpen(false); }} disabled={!wishlist.groups.length || Boolean(cacheIssue)}><span className="mega-tile-icon"><Plus size={17} /></span><span className="mega-tile-text"><b>Add idea</b><small>Save something new.</small></span></button>
+                <button type="button" className="mega-tile" onClick={() => { setGroupEditor(null); setCollectionsOpen(false); }} disabled={Boolean(cacheIssue)}><span className="mega-tile-icon"><FolderPlus size={17} /></span><span className="mega-tile-text"><b>New collection</b><small>Group ideas together.</small></span></button>
+                <button type="button" className="mega-tile" onClick={() => { setCollectionsOpen(false); importInputRef.current?.click(); }} disabled={Boolean(cacheIssue)}><span className="mega-tile-icon"><FileUp size={17} /></span><span className="mega-tile-text"><b>Import</b><small>From markdown or CSV.</small></span></button>
+              </div>
+              <div className="mega-label"><span>CURRENT VIEW</span><span>{selectedGroupData?.name || "All ideas"}</span></div>
+              <p className="mega-hint">Pick a collection on the left to filter the page.</p>
+            </div>
+          </div></div>
+        </div>
 
         <div className="page-content">
           <div className="dashboard-layout">
@@ -970,7 +1019,7 @@ function App() {
                 {wishlist.groups.length ? <nav className="aside-collections" aria-label="Quick access to collections">
                   {wishlist.groups.slice(0, 6).map((group) => {
                     const stats = groupStats.get(group.id) || { count: 0, total: 0 };
-                    return <button key={group.id} className={selectedGroup === group.id ? "active" : ""} onClick={() => setSelectedGroup(group.id)}><FolderOpen size={15} /><span>{group.name}</span><small>{stats.count}</small></button>;
+                    return <button key={group.id} className={selectedGroup === group.id ? "active" : ""} onClick={() => setSelectedGroup(group.id)}><FolderOpen size={15} /><span>{group.name}</span><small key={stats.count}>{stats.count}</small></button>;
                   })}
                 </nav> : <p className="aside-empty">Collections keep related ideas together.</p>}
                 <button className="aside-link" onClick={() => setGroupEditor(null)} disabled={Boolean(cacheIssue)}><Plus size={14} /> Create collection</button>

@@ -1,18 +1,96 @@
 # Troved
 
-A personal, local-first wishlist with a quiet GitHub-inspired interface and a restrained green accent. Organize ideas into nested collections, keep EUR estimates, search and filter your list, and import Markdown or CSV files. Your wishlist stays in your browser or a folder you choose; there is no Troved account or wishlist database.
+A personal, local-first wishlist with a quiet GitHub-inspired interface and a restrained green accent. Organize ideas into nested collections, keep EUR estimates, search and filter your list, and import Markdown or CSV files.
 
-## Quick start
+## What is this?
 
-Requirements: Node.js 22 or newer.
+Troved is a wishlist that runs in your browser. Your wishlist stays in your browser storage or in a folder you choose; there is no Troved account or wishlist database. An optional small server adds AI-assisted Markdown import through OpenAI, Anthropic, Google Gemini, or a local Ollama instance, but the core app works without it.
 
-1. Install the frontend dependencies: `cd frontend` then `npm ci`.
-2. In that terminal, start the frontend with `npm run dev`.
-3. Open the local URL Vite prints (usually `http://127.0.0.1:5173`).
+## Features
 
-The core wishlist works without a backend. For cloud AI import assistance, start the optional server in a second terminal from the project root with `node server/index.mjs`; configure provider keys as described below.
+- Nested collections for organizing wishlist items
+- EUR estimates per item, with totals and optional daily reference rates from [Frankfurter](https://www.frankfurter.dev/)
+- Search and filter across your whole list
+- Local import of `.md`, `.markdown`, and `.csv` files (headings, list entries, Markdown tables, and wishlist CSV columns), with review before anything is imported
+- Optional AI-assisted Markdown organization (OpenAI, Anthropic, Google Gemini, or Ollama)
+- Folder autosave to a `wishlist.json` file, JSON download/restore, and ZIP backup
+- Light and dark themes, applied before first paint so dark-mode users see no light flash
+- Fonts bundled via Fontsource (DM Sans, Manrope); no webfont CDN is contacted
+- Keyboard navigation, dialog focus trapping, and reduced-motion support
 
-When the optional server is running, Vite forwards `/api` requests to `127.0.0.1:3000`. To check the production frontend build, run `npm run build` from `frontend/`; to run server endpoint tests, run `npm test` from `server/`.
+## Keyboard shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl/Cmd + K` | Focus wishlist search |
+| `Ctrl/Cmd + I` | Open the add-item form |
+| `Esc` | Close a dialog (focus is restored afterwards) |
+
+Shortcut hints appear when you hover or focus the search field and the quick-add button.
+
+## Tech stack and architecture
+
+| Component | Technology |
+| --- | --- |
+| Frontend | Vite (in `frontend/`) |
+| Optional server | Node.js (`server/index.mjs`) |
+| Storage | Browser storage, optionally an autosaved `wishlist.json` in a folder you choose |
+| Cloud AI (optional) | OpenAI, Anthropic, Google Gemini via the Troved server |
+| Local AI (optional) | Ollama HTTP API, called from the browser |
+| Exchange rates (optional) | Frankfurter reference rates |
+| Server tests | `npm test` in `server/` (6 passing) |
+| Deployment | Docker image / Docker Compose |
+
+```mermaid
+flowchart LR
+    Browser[Troved frontend] --> Store[(Browser storage / wishlist.json folder)]
+    Browser -->|optional, /api/ai/*| Server[Troved server]
+    Server -->|API keys stay here| Cloud[OpenAI / Anthropic / Gemini]
+    Browser -->|optional| Ollama[Ollama]
+    Browser -->|optional, daily rates| FX[Frankfurter]
+```
+
+The server serves the production frontend build (`frontend/dist`, same origin) and exposes `/api/health` plus the `/api/ai/*` endpoints. It has no wishlist database.
+
+## Installation
+
+### Requirements
+
+- Node.js 22 or newer
+- Optional: API key(s) for OpenAI, Anthropic, or Google Gemini for cloud AI import assistance
+- Optional: [Ollama](https://ollama.com/download) for local AI import assistance
+- Optional: Docker, for the private deployment described below
+
+### 1. Start the frontend
+
+Run these commands from the repository root:
+
+```sh
+cd frontend
+npm ci
+npm run dev
+```
+
+Open the local URL printed by Vite (usually <http://127.0.0.1:5173>). The core wishlist works without a backend.
+
+### 2. Start the optional server
+
+For cloud AI import assistance, open a second terminal from the project root:
+
+```sh
+node server/index.mjs
+```
+
+Or run `npm start` from `server/`. Configure provider keys as described under [Configuration](#configuration).
+
+### 3. Build for production
+
+```sh
+cd frontend
+npm run build
+```
+
+This produces `frontend/dist`, which the server serves on the same origin. The Docker image builds it automatically.
 
 ## Optional AI-assisted import
 
@@ -27,14 +105,33 @@ AI assistance only refines Markdown import results; it is not a general chat fea
 
 Cloud model usage may incur charges from the provider. API keys are never entered into the browser or committed to this project.
 
-### Local provider setup
+### Import details
 
-1. Copy `.env.example` to `.env` in the project root.
-2. Put the provider key(s) in `.env`, keeping the file private. Add a key only for a provider you intend to use.
-3. Run `node server/index.mjs` from the root and `npm run dev` from `frontend/`.
-4. In Troved, open **Preferences → Cloud AI models**, refresh models, choose a provider and model, then select **Use for imports**.
+Explicit EUR prices are used in totals. Non-EUR or uncertain amounts remain marked as unverified and are excluded. Prices entered in the app are stored as EUR estimates; optional daily reference rates from Frankfurter convert display totals and item prices.
 
-The frontend never receives API keys. The server reads `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `GEMINI_API_KEY` from its environment. Never paste credentials into chat or browser settings.
+## Configuration
+
+The server reads its provider keys from its private environment. Copy `.env.example` to `.env` in the project root, keep the file private, and add a key only for a provider you intend to use.
+
+| Variable | Purpose |
+| --- | --- |
+| `OPENAI_API_KEY` | Enables OpenAI models for import assistance |
+| `ANTHROPIC_API_KEY` | Enables Anthropic models for import assistance |
+| `GEMINI_API_KEY` | Enables Google Gemini models for import assistance |
+
+Then, in Troved, open **Preferences → Cloud AI models**, refresh models, choose a provider and model, and select **Use for imports**.
+
+The frontend never receives API keys. Never paste credentials into chat or browser settings.
+
+### Theme
+
+The theme is remembered in `wishr-theme` (or follows the operating system when nothing is saved). Use the sun/moon button in the header or **Preferences → Appearance** to switch.
+
+## Your data and backups
+
+Troved stores its working copy in browser storage. In supported browsers such as current Chrome or Edge, **Preferences → Choose folder** can autosave a separate `wishlist.json` where the app is on localhost or HTTPS and you grant permission. If permission expires, reconnect the folder. On browsers or origins without direct folder writing, download JSON after editing and save it yourself.
+
+Choosing a folder that already contains a wishlist merges unique groups and items with the current browser copy; matching items are not duplicated. A malformed folder file is reported and is not overwritten. Disconnecting leaves its file untouched. Use **ZIP backup** for a portable snapshot, or **Restore JSON** to merge a valid backup.
 
 ## Private Proxmox deployment
 
@@ -89,7 +186,7 @@ Docker publishes container ports through its own firewall rules, which may bypas
 
 Plain HTTP on a private LAN is used by this setup. Browsers may disable direct folder autosave on a LAN HTTP address because it is not a secure browser context; JSON download/restore backups remain available. If you need folder autosave, use HTTPS with a certificate trusted by your devices while keeping the service private.
 
-### Update the VM
+### Updating the VM
 
 After copying updated source files to the VM:
 
@@ -99,19 +196,43 @@ docker compose up -d --build
 
 Keep `.env` backed up privately, never in source control. To stop the service, run `docker compose down`.
 
-## Your data and backups
+## Development and testing
 
-Troved stores its working copy in browser storage. In supported browsers such as current Chrome or Edge, **Preferences → Choose folder** can autosave a separate `wishlist.json` where the app is on localhost or HTTPS and you grant permission. If permission expires, reconnect the folder. On browsers or origins without direct folder writing, download JSON after editing and save it yourself.
+Run the server endpoint tests (6 passing):
 
-Choosing a folder that already contains a wishlist merges unique groups and items with the current browser copy; matching items are not duplicated. A malformed folder file is reported and is not overwritten. Disconnecting leaves its file untouched. Use **ZIP backup** for a portable snapshot, or **Restore JSON** to merge a valid backup.
+```sh
+cd server
+npm test
+```
 
-## Import details
+Build the frontend:
 
-Explicit EUR prices are used in totals. Non-EUR or uncertain amounts remain marked as unverified and are excluded. Prices entered in the app are stored as EUR estimates; optional daily reference rates from [Frankfurter](https://www.frankfurter.dev/) convert display totals and item prices.
+```sh
+cd frontend
+npm ci
+npm run build
+```
 
-## Keyboard and accessibility
+## Security and local use
 
-- `Ctrl/Cmd + K` focuses wishlist search.
-- `Ctrl/Cmd + I` opens the add-item form.
+- The server has no user authentication. Keep it on a private network or behind a VPN, and never expose port 3000 to the public internet.
+- API keys live only in the server's private environment (`.env`, kept out of source control, `chmod 600`). The browser never receives them.
+- Your wishlist stays in your browser or a folder you choose. The server has no wishlist database.
+- Only the Markdown you explicitly choose to **Improve** is sent to the selected model. CSV files are never sent for AI processing, and nothing is imported until you confirm.
+- Ollama runs at an address your browser can reach; set it only to an endpoint you trust.
+- Cloud model usage may incur charges and is subject to the provider's terms.
+- Always review AI output before importing.
+
+## Accessibility
+
 - Dialogs support Escape to close, focus restoration, and keyboard focus trapping.
-- The interface follows the system's reduced-motion preference and includes light and dark themes.
+- The interface follows the system's reduced-motion preference.
+- Light and dark themes are included.
+- The browser tab shows a built-in Troved favicon (dark tile with a green dot, matching the header logo).
+
+## Project structure
+
+```text
+frontend/   Vite application (wishlist UI, local import parser, backups)
+server/     Optional Node.js server: serves frontend/dist, /api/health, /api/ai/*, and endpoint tests
+```
