@@ -1,19 +1,42 @@
-import { createReadStream, writeFile } from "node:fs";
-import { access, stat, mkdir } from "node:fs/promises";
+import { createReadStream, existsSync } from "node:fs";
+import { access, stat, mkdir, readFile, copyFile, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
+// Try loading local .env if available
+try {
+  if (typeof process.loadEnvFile === "function") {
+    const envPaths = [
+      resolve(fileURLToPath(new URL("..", import.meta.url)), ".env"),
+      resolve(fileURLToPath(new URL(".", import.meta.url)), ".env"),
+    ];
+    for (const p of envPaths) {
+      if (existsSync(p)) {
+        process.loadEnvFile(p);
+        break;
+      }
+    }
+  }
+} catch {
+  // Ignore env loading errors
+}
+
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const staticRoot = resolve(process.env.TROVED_STATIC_DIR || resolve(root, "frontend", "dist"));
-const saveRoot = process.env.TROVED_SAVE_DIR ? resolve(process.env.TROVED_SAVE_DIR) : null;
+const defaultStaticRoot = resolve(process.env.TROVED_STATIC_DIR || resolve(root, "frontend", "dist"));
+const defaultSaveRoot = process.env.TROVED_SAVE_DIR ? resolve(process.env.TROVED_SAVE_DIR) : null;
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "0.0.0.0";
-const requestLimit = 32_000;
+const requestLimit = 1_000_000;
 const requestTimeout = 90_000;
 const modelCacheTtl = 5 * 60_000;
 const modelCache = new Map();
 const requestBuckets = new Map();
+
+// Exchange rates in-memory cache
+let ratesCache = null;
+let ratesCachedAt = 0;
+const ratesCacheTtl = 60 * 60 * 1000; // 1 hour
 
 const providers = {
   openai: {
@@ -180,7 +203,8 @@ function getClientAddress(request) {
   return request.socket.remoteAddress || "unknown";
 }
 
-function checkRateLimit(request) {
+function checkRateLimit(request, disabled = false) {
+  if (disabled) return;
   const key = getClientAddress(request);
   const now = Date.now();
   const bucket = requestBuckets.get(key);
@@ -189,7 +213,7 @@ function checkRateLimit(request) {
     return;
   }
   bucket.count += 1;
-  if (bucket.count > 20) throw new HttpError(429, "AI request limit reached. Try again in an hour.");
+  if (bucket.count > 100) throw new HttpError(429, "AI request limit reached. Try again in an hour.");
 }
 
 async function readJson(request) {
@@ -218,7 +242,51 @@ function sendJson(response, status, value) {
   response.end(JSON.stringify(value));
 }
 
-async function serveStatic(pathname, request, response) {
+async function fetchExchangeRates() {
+  const now = Date.now();
+  if (ratesCache && now - ratesCachedAt < ratesCacheTtl) {
+    return ratesCache;
+  }
+  const urls = [
+    "https://api.frankfurter.dev/v1/latest",
+    "https://api.frankfurter.app/v1/latest",
+  ];
+  for (const url of urls) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timer);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.rates) {
+          ratesCache = { base: data.base || "EUR", date: data.date, rates: data.rates };
+          ratesCachedAt = now;
+          return ratesCache;
+        }
+      }
+    } catch {
+      // Continue to next endpoint or fallback
+    }
+  }
+  if (ratesCache) return ratesCache;
+  // Static fallback rates if completely offline
+  return {
+    base: "EUR",
+    date: new Date().toISOString().split("T")[0],
+    rates: {
+      USD: 1.08,
+      GBP: 0.85,
+      CHF: 0.95,
+      CAD: 1.48,
+      AUD: 1.65,
+      PLN: 4.30,
+      JPY: 165.0,
+    },
+  };
+}
+
+async function serveStaticFile(staticRoot, pathname, request, response) {
   let decoded;
   try {
     decoded = decodeURIComponent(pathname);
@@ -253,8 +321,10 @@ async function serveStatic(pathname, request, response) {
     ".woff": "font/woff",
     ".woff2": "font/woff2",
   };
+  const isHashedAsset = requestedPath.startsWith("assets/");
   response.writeHead(200, {
     "Content-Type": types[extname(file)] || "application/octet-stream",
+    "Cache-Control": isHashedAsset ? "public, max-age=31536000, immutable" : "no-cache",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "strict-origin-when-cross-origin",
@@ -272,7 +342,13 @@ async function serveStatic(pathname, request, response) {
   stream.pipe(response);
 }
 
-export function createAppServer() {
+export function createAppServer(options = {}) {
+  const staticRoot = options.staticRoot ? resolve(options.staticRoot) : defaultStaticRoot;
+  const saveRoot = options.saveRoot !== undefined
+    ? (options.saveRoot ? resolve(options.saveRoot) : null)
+    : defaultSaveRoot;
+  const disableRateLimit = Boolean(options.disableRateLimit);
+
   return createServer(async (request, response) => {
     const pathname = new URL(request.url || "/", "http://localhost").pathname;
     try {
@@ -291,18 +367,39 @@ export function createAppServer() {
           return;
         }
         if (request.method === "POST" && pathname === "/api/ai/improve") {
-          checkRateLimit(request);
+          checkRateLimit(request, disableRateLimit);
           const result = await improveWithProvider(await readJson(request));
           sendJson(response, 200, result);
           return;
         }
+        if (request.method === "GET" && pathname === "/api/rates") {
+          const ratesData = await fetchExchangeRates();
+          sendJson(response, 200, ratesData);
+          return;
+        }
         if (request.method === "GET" && pathname === "/api/wishlist/save-status") {
-          sendJson(response, 200, { configured: Boolean(saveRoot) });
+          sendJson(response, 200, { configured: Boolean(saveRoot), path: saveRoot || null });
+          return;
+        }
+        if (request.method === "GET" && pathname === "/api/wishlist/load") {
+          if (!saveRoot) {
+            sendJson(response, 200, { configured: false, exists: false, wishlist: null });
+            return;
+          }
+          const file = resolve(saveRoot, "wishlist.json");
+          try {
+            await access(file);
+            const content = await readFile(file, "utf8");
+            const wishlist = JSON.parse(content);
+            sendJson(response, 200, { configured: true, exists: true, wishlist });
+          } catch {
+            sendJson(response, 200, { configured: true, exists: false, wishlist: null });
+          }
           return;
         }
         if (request.method === "POST" && pathname === "/api/wishlist/save") {
           if (!saveRoot) throw new HttpError(503, "Server-side wishlist saving is not configured. Set TROVED_SAVE_DIR on the server.");
-          checkRateLimit(request);
+          checkRateLimit(request, disableRateLimit);
           const payload = await readJson(request);
           if (!payload || typeof payload !== "object" || Array.isArray(payload) || typeof payload.wishlist !== "object") {
             throw new HttpError(400, "Request body must include a wishlist object.");
@@ -311,8 +408,19 @@ export function createAppServer() {
             await mkdir(saveRoot, { recursive: true });
             const file = resolve(saveRoot, "wishlist.json");
             if (file !== saveRoot && !file.startsWith(saveRoot + sep)) throw new HttpError(403, "Save path escapes the configured save directory.");
+            
+            // If file already exists, create atomic backup before overwrite
+            try {
+              if (existsSync(file)) {
+                const backupFile = resolve(saveRoot, "wishlist.json.bak");
+                await copyFile(file, backupFile);
+              }
+            } catch {
+              // Ignore backup errors, proceed with save
+            }
+
             await writeFile(file, `${JSON.stringify(payload.wishlist, null, 2)}\n`);
-            sendJson(response, 200, { saved: true, path: file });
+            sendJson(response, 200, { saved: true, path: file, timestamp: Date.now() });
           } catch (error) {
             if (error instanceof HttpError) throw error;
             throw new HttpError(500, `Could not save wishlist to server: ${error instanceof Error ? error.message : String(error)}`);
@@ -322,7 +430,7 @@ export function createAppServer() {
         throw new HttpError(404, "API route not found.");
       }
       if (request.method !== "GET" && request.method !== "HEAD") throw new HttpError(405, "Method not allowed.");
-      await serveStatic(pathname, request, response);
+      await serveStaticFile(staticRoot, pathname, request, response);
     } catch (error) {
       const status = error instanceof HttpError ? error.status : 500;
       if (!(error instanceof HttpError)) console.error("Unexpected Troved server error:", error);

@@ -1,25 +1,73 @@
 const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const path = require("path");
 const { spawn } = require("child_process");
-const url = require("url");
+const http = require("http");
 
 let mainWindow = null;
 let serverProcess = null;
+let isQuitting = false;
+
+// Determine paths for both development and production (packed) environments
+function getAppRoot() {
+  // In production, __dirname is inside app.asar or app folder
+  // In development, __dirname is the electron folder
+  if (process.env.NODE_ENV === "development" || !app.isPackaged) {
+    return path.join(__dirname, "..");
+  }
+  return process.resourcesPath;
+}
+
+function waitForServer(port, timeout = 15000) {
+  return new Promise((resolve) => {
+    const startTime = Date.now();
+    const check = () => {
+      const req = http.get(`http://127.0.0.1:${port}/api/health`, (res) => {
+        let data = "";
+        res.on("data", (chunk) => { data += chunk; });
+        res.on("end", () => {
+          if (res.statusCode === 200) {
+            resolve(true);
+          } else {
+            setTimeout(check, 200);
+          }
+        });
+      });
+      req.on("error", () => {
+        if (Date.now() - startTime < timeout) {
+          setTimeout(check, 200);
+        } else {
+          console.error("[troved] Server health check timed out");
+          resolve(false);
+        }
+      });
+      req.setTimeout(1000, () => {
+        req.destroy();
+        setTimeout(check, 200);
+      });
+    };
+    check();
+  });
+}
 
 function createWindow() {
+  const appRoot = getAppRoot();
+  
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 900,
-    minHeight: 600,
+    width: 1400,
+    height: 900,
+    minWidth: 1000,
+    minHeight: 700,
     show: false,
     title: "Troved — Wishlist",
+    frame: true,
+    backgroundColor: "#0d1117",
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, "preload.js"),
+      devTools: !app.isPackaged,
     },
-    icon: path.join(__dirname, "..", "frontend", "public", "favicon.svg"),
+    icon: path.join(appRoot, "frontend", "public", "favicon.svg"),
   });
 
   mainWindow.once("ready-to-show", () => {
@@ -28,56 +76,70 @@ function createWindow() {
 
   mainWindow.on("closed", () => {
     mainWindow = null;
-    if (serverProcess) {
+    if (serverProcess && !isQuitting) {
       serverProcess.kill();
       serverProcess = null;
     }
-    if (!app.isQuitting) {
-      app.quit();
-    }
   });
 
-  const startServer = () => {
-    const serverPath = path.join(__dirname, "..", "server", "index.mjs");
+  // Open DevTools in development
+  if (!app.isPackaged) {
+    mainWindow.webContents.openDevTools();
+  }
+
+  const startServer = async () => {
+    const serverPath = path.join(appRoot, "server", "index.mjs");
+    const staticDir = path.join(appRoot, "frontend", "dist");
+    
     serverProcess = spawn("node", [serverPath], {
-      cwd: path.join(__dirname, ".."),
+      cwd: appRoot,
       stdio: ["ignore", "pipe", "pipe"],
       env: {
         ...process.env,
         PORT: "3000",
         HOST: "127.0.0.1",
         NODE_ENV: "production",
-        TROVED_STATIC_DIR: path.join(__dirname, "..", "frontend", "dist"),
+        TROVED_STATIC_DIR: staticDir,
       },
     });
 
     serverProcess.stdout.on("data", (data) => {
-      console.log(`[troved-server] ${data}`);
+      console.log(`[troved-server] ${data.toString().trim()}`);
     });
     serverProcess.stderr.on("data", (data) => {
-      console.error(`[troved-server err] ${data}`);
+      console.error(`[troved-server err] ${data.toString().trim()}`);
     });
 
-    serverProcess.on("exit", (code) => {
-      console.log(`[troved-server] exited with code ${code}`);
+    serverProcess.on("exit", (code, signal) => {
+      console.log(`[troved-server] exited with code ${code} and signal ${signal}`);
       serverProcess = null;
     });
+
+    // Wait for the server to be ready
+    const isReady = await waitForServer(3000);
+    if (isReady && !mainWindow.isDestroyed()) {
+      mainWindow.loadURL("http://127.0.0.1:3000");
+    } else {
+      console.error("[troved] Failed to start internal server");
+      mainWindow.webContents.send("server-error", "Failed to start the internal server.");
+    }
   };
 
-  // Wait briefly for the server to start, then load the frontend
   startServer();
-  setTimeout(() => {
-    if (!mainWindow.isDestroyed()) {
-      mainWindow.loadURL("http://127.0.0.1:3000");
-    }
-  }, 2000);
 
   ipcMain.handle("open-external", async (event, targetUrl) => {
     await shell.openExternal(targetUrl);
   });
 
   ipcMain.handle("quit-app", () => {
+    isQuitting = true;
     app.quit();
+  });
+
+  // Handle external links
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: "deny" };
   });
 }
 

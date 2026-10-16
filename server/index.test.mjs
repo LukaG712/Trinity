@@ -111,3 +111,56 @@ test("unsupported API routes return a structured 404", async () => {
   assert.equal(response.status, 404);
   assert.deepEqual(await response.json(), { error: "API route not found." });
 });
+
+test("rates endpoint returns cached or fresh currency rates", async () => {
+  const response = await fetch(`${baseUrl}/api/rates`);
+  assert.equal(response.status, 200);
+  const data = await response.json();
+  assert.equal(data.base, "EUR");
+  assert.ok(typeof data.rates === "object" && data.rates !== null);
+  assert.ok("USD" in data.rates);
+});
+
+test("wishlist save and load endpoints work with configured save directory", async () => {
+  const { mkdtemp, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+
+  const tempSaveDir = await mkdtemp(join(tmpdir(), "troved-test-"));
+  const tempServer = createAppServer({ saveRoot: tempSaveDir, disableRateLimit: true });
+  
+  await new Promise((resolve, reject) => {
+    tempServer.once("error", reject);
+    tempServer.listen(0, "127.0.0.1", resolve);
+  });
+  const tempUrl = `http://127.0.0.1:${tempServer.address().port}`;
+
+  try {
+    // Initial load when file does not exist yet
+    const loadBefore = await fetch(`${tempUrl}/api/wishlist/load`);
+    assert.equal(loadBefore.status, 200);
+    assert.deepEqual(await loadBefore.json(), { configured: true, exists: false, wishlist: null });
+
+    // Save wishlist
+    const testWishlist = { version: 1, groups: [{ id: "g1", name: "Tech" }], items: [{ id: "i1", groupId: "g1", name: "Keyboard", priceEur: 100, quantity: 1 }] };
+    const saveRes = await fetch(`${tempUrl}/api/wishlist/save`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wishlist: testWishlist }),
+    });
+    assert.equal(saveRes.status, 200);
+    const saveJson = await saveRes.json();
+    assert.equal(saveJson.saved, true);
+
+    // Load saved wishlist
+    const loadAfter = await fetch(`${tempUrl}/api/wishlist/load`);
+    assert.equal(loadAfter.status, 200);
+    const loadJson = await loadAfter.json();
+    assert.equal(loadJson.configured, true);
+    assert.equal(loadJson.exists, true);
+    assert.deepEqual(loadJson.wishlist, testWishlist);
+  } finally {
+    await new Promise((resolve) => tempServer.close(resolve));
+    await rm(tempSaveDir, { recursive: true, force: true });
+  }
+});

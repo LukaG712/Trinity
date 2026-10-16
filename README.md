@@ -270,10 +270,25 @@ A standalone Windows desktop app is available — no browser tabs, no PowerShell
 
 | File | Description |
 |------|-------------|
-| `Troved Desktop/release/Troved 1.0.0.exe` | Portable executable — just double-click and run |
-| `Troved Desktop/release/Troved Setup 1.0.0.exe` | Installer with Start Menu shortcut |
+| `Desktop/release/Troved-Portable.exe` | Single portable executable — just double-click and run |
 
 The desktop app bundles the frontend and the Node.js server together. Launching it opens Troved in its own native window. Your wishlist stays in browser storage or a folder you choose, exactly like the web version.
+
+### Building the desktop app
+
+```sh
+# Build the frontend first
+cd frontend
+npm ci
+npm run build
+
+# Build the portable desktop app
+cd ../Desktop
+npm ci
+npm run build
+```
+
+The portable executable will be at `Desktop/release/Troved-Portable.exe`.
 
 ## Project structure
 

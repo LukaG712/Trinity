@@ -8,7 +8,8 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win --x64 --ia32",
+    "build": "electron-builder --win portable --x64",
+    "build:installer": "electron-builder --win nsis --x64",
     "postinstall": "electron-builder install-app-deps"
   },
   "devDependencies": {
@@ -24,33 +25,46 @@
     "files": [
       "electron/**/*",
       "../frontend/dist/**/*",
-      "../server/index.mjs",
-      "!**/node_modules/**/*"
+      "../server/index.mjs"
+    ],
+    "extraResources": [
+      {
+        "from": "../frontend/dist",
+        "to": "frontend/dist"
+      },
+      {
+        "from": "../server",
+        "to": "server"
+      }
     ],
     "extraMetadata": {
       "main": "electron/main.js"
     },
-    "asar": false,
+    "asar": true,
+    "nodeGypRebuild": false,
     "win": {
+      "sign": null,
+      "signAndEditExecutable": false,
+      "signDlls": false,
       "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64",
-            "ia32"
-          ]
-        },
         {
           "target": "portable",
           "arch": [
-            "x64",
-            "ia32"
+            "x64"
           ]
         }
-      ],
-      "sign": null,
-      "signAndEditExecutable": false,
-      "signDlls": false
+      ]
+    },
+    "portable": {
+      "artifactName": "Troved-Portable.${ext}"
+    },
+    "nsis": {
+      "artifactName": "Troved-Setup.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Troved"
     },
     "publish": null
   },
