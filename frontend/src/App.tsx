@@ -1089,7 +1089,7 @@ function App() {
         <SettingsSection icon={<ShieldCheck size={17} />} title="Save to server (NAS / SMB)" description={serverSaveConfigured ? "Server-side saving is configured. Your wishlist can be saved to the server's storage directory (e.g. a mounted NAS or SMB share)." : "Not configured. Set TROVED_SAVE_DIR on the Troved server to enable saving to a server directory."}>
           <p className="settings-copy">When enabled, clicking Save will write your current wishlist to <code>wishlist.json</code> in the server's configured directory. This directory can be a mounted NAS or SMB share, letting you keep a central copy on your network storage.</p>
           <div className="settings-actions">
-            {serverSaveConfigured && !serverSaveBusy && <button className="primary-btn" onClick={() => void saveWishlistToServerFn()}><ShieldCheck size={15} /> Save to server</button>}
+            {serverSaveConfigured && !serverSaveBusy && <button className="primary-btn" onClick={() => void saveWishlistToServerFn()}<ShieldCheck size={15} /> Save to server</button>}
             {serverSaveConfigured && serverSaveBusy && <button className="primary-btn" disabled>Saving…</button>}
             {!serverSaveConfigured && <button className="secondary-btn" disabled>Configure TROVED_SAVE_DIR on the server</button>}
             {serverSaveMessage && <span className="settings-copy">{serverSaveMessage}</span>}

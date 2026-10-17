@@ -44,26 +44,12 @@ export async function improveWithCloudModel(provider: CloudAiProvider, model: st
 }
 
 export async function fetchSaveStatus() {
-  const payload = await apiRequest<{ configured: boolean; path?: string | null }>("/api/wishlist/save-status");
+  const payload = await apiRequest<{ configured: boolean }>("/api/wishlist/save-status");
   return Boolean(payload.configured);
 }
 
-export async function fetchSavedWishlist() {
-  const payload = await apiRequest<{ configured: boolean; exists: boolean; wishlist: unknown | null }>("/api/wishlist/load");
-  return payload;
-}
-
-export async function fetchServerRates() {
-  try {
-    const payload = await apiRequest<{ base: string; date: string; rates: Record<string, number> }>("/api/rates");
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
 export async function saveWishlistToServer(wishlist: unknown) {
-  const payload = await apiRequest<{ saved: boolean; path?: string; timestamp?: number }>("/api/wishlist/save", {
+  const payload = await apiRequest<{ saved: boolean; path?: string }>("/api/wishlist/save", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ wishlist }),

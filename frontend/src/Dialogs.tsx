@@ -122,7 +122,7 @@ export function ItemDialog({ item, groups, onClose, onSave }: {
         </div>
         <label className="field field-wide"><span>Product link <i>Optional</i></span><div className="field-with-icon"><Link2 size={16} /><input type="url" value={form.link || ""} onChange={(event) => set("link", event.target.value)} placeholder="https://…" /></div></label>
         <label className="field field-wide"><span>Notes <i>Optional</i></span><textarea rows={3} maxLength={2000} value={form.notes || ""} onChange={(event) => set("notes", event.target.value)} placeholder="What makes this one worth remembering?" /></label>
-        <label className="field field-wide"><span>Tags <i>Optional</i> <small>comma-separated</small></span><input maxLength={200} value={form.tags?.join(", ") || ""} onChange={(event) => set("tags", event.target.value.split(",").map((tag) => tag.trim()).filter(Boolean))} placeholder="electronics, gift, urgent…" /></label>
+        <label className=\"field field-wide\"><span>Tags <i>Optional</i> <small>comma-separated</small></span><input maxLength={200} value={form.tags?.join(\", \") || \"\"} onChange={(event) => set(\"tags\", event.target.value.split(\",\").map((tag) => tag.trim()).filter(Boolean))} placeholder=\"electronics, gift, urgent…\" /></label>
         {error && <p className="form-error" role="alert">{error}</p>}
         <div className="modal-actions"><button type="button" className="text-button" onClick={onClose}>Cancel</button><button className="primary-btn" type="submit" disabled={!groups.length}><Check size={16} /> Save item</button></div>
         {!groups.length && <p className="form-error">Create a group first, then add items to it.</p>}
