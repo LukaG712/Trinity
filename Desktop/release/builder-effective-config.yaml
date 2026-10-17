@@ -1,0 +1,29 @@
+directories:
+  output: release
+  buildResources: build
+appId: com.troved.desktop
+productName: Troved
+files:
+  - filter:
+      - electron/**/*
+      - ../frontend/dist/**/*
+      - ../server/index.mjs
+      - '!**/node_modules/**/*'
+extraMetadata:
+  main: electron/main.js
+asar: false
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+        - ia32
+    - target: portable
+      arch:
+        - x64
+        - ia32
+  sign: null
+  signAndEditExecutable: false
+  signDlls: false
+publish: null
+electronVersion: 28.3.3

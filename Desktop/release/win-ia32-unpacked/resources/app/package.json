@@ -1,0 +1,12 @@
+{
+  "name": "troved-desktop",
+  "productName": "Troved",
+  "version": "1.0.0",
+  "description": "Troved - personal wishlist (portable desktop app)",
+  "main": "electron/main.js",
+  "author": "",
+  "license": "MIT",
+  "allowScripts": {
+    "electron@28.3.3": true
+  }
+}
