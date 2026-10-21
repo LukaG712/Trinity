@@ -14,8 +14,6 @@
                                                                          '
 </pre>
 
-# Troved
-
 > **A personal, local-first wishlist that runs entirely in your browser.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)

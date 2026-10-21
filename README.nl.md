@@ -14,8 +14,6 @@
                                                                          '
 </pre>
 
-# Troved
-
 > **Een persoonlijke, lokaal-eerst wishlist die volledig in je browser draait.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
