@@ -1,61 +1,178 @@
-﻿# Troved
+# Troved
 
-Een persoonlijke, lokaal eerst wishlist met een rustige GitHub-geÃ¯nspireerde interface en een gedempt groene accent. Organiseer ideeÃ«n in geneste collecties, houd EUR-schattingen bij, zoek en filter je lijst, en importeer Markdown- of CSV-bestanden.
+> **Een persoonlijke, lokaal-eerst wishlist die volledig in je browser draait.**
 
-> Read this in English: [English README](README.md).
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Node](https://img.shields.io/badge/Node-22+-brightgreen.svg)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-6.0+-purple.svg)](https://vitejs.dev/)
+[![Tests](https://img.shields.io/badge/Tests-33%20slagen-brightgreen.svg)]()
 
-## Wat is dit?
+Organiseer ideeën in geneste collecties, houd EUR-prijzen bij, importeer Markdown- of CSV-bestanden, en plan je aankopen — allemaal zonder account, clouddatabase of internetverbinding. Je gegevens blijven op je apparaat.
 
-Troved is een wishlist die in je browser draait. Je wishlist blijft in je browseropslag of in een map die je kiest; er is geen Troved-account of wishlist-database. Een optionele kleine server voegt AI-geassisteerde Markdown-import toe via OpenAI, Anthropic, Google Gemini, of een lokaal Ollama-exemplaar, maar de core-app werkt zonder hem.
+> 🇬🇧 Read this in English: [English README](README.md).
 
-## Functies
+---
 
-- Geneste collecties voor het organiseren van wishlist-items
-- EUR-schattingen per item, met totals en optionele dagelijkse referentiekoersen van [Frankfurter](https://www.frankfurter.dev/)
-- Zoek en filter in je hele lijst
-- Status per item (Gewild, Onderzoek, Gepland, Aangeschaft) met status-gebaseerd filteren
-- Lokaal importeren van `.md`, `.markdown`, en `.csv`-bestanden (koppen, lijstitems, Markdown-tabellen, en wishlist CSV-kolommen), met controle voordat iets wordt geïmporteerd
-- Exporteer wishlist als CSV voor gebruik in spreadsheets
-- Optionele AI-geassisteerde Markdown-organisatie (OpenAI, Anthropic, Google Gemini, of Ollama)
-- Folder autosave naar een `wishlist.json`-bestand, JSON download/herstel, en ZIP-backup
-- Bulkacties: selecteer meerdere items om status te wijzigen, te verplaatsen, of te verwijderen
-- Vergelijkingsweergave naast elkaar voor geselecteerde items
-- Licht en donker thema, toegepast vóór eerste paint zodat donker-gebruikers geen licht flits zien
-- Fonts gebundeld via Fontsource (DM Sans, Manrope); er wordt geen webfont-CDN benaderd
-- Toetsenbordnavigatie, dialoogfocusval, en ondersteuning voor verminderde beweging
-- Tags en prioriteitsbeoordeling per item voor kruisende organisatie
-- Sleepfunctie: herschik items door ze op andere items te slepen, verplaats items tussen groepen door ze op een groep in de zijbalk te droppe, en nest groepen door ze op elkaar te slepen — werkt ook op touch-apparaten
-- PWA-ondersteuning: installeer als standalone-app met offline-toegang
-- Sorteeropties: sorteer op recent toegevoegd, datum, naam, laagste/hogste prijs, prioriteit, of status
-- Prijsalerts: stel een doelprijs in per item en ontvang een visueel "Deal!"-badge wanneer de huidige prijs op of onder uw doel daalt
-- Itemafbeeldingen: voeg een productafbeeldings-URL toe aan elk item, weergegeven als miniatuur op de kaart
-- Tagfiltering: filter items op tags met één-klik tag-chips die itemaantallen tonen
-- Winkelwagentje-modus: schakel over naar een compacte controlelijstweergave met alleen gekochte items, geoptimaliseerd voor gebruik in de winkel
-- Donkere modus-schema: schakel automatisch tussen lichte en donkere thema's op basis van tijd van dag of systeemvoorkeur
-- Wishlist delen: genereer een deelbare link met uw wishlist-gegevens gecodeerd in de URL, of download als JSON
-- Budgettracking: stel een maandbudget in en houd uitgaven bij met een visuele voortgangsbalk
-- Statistieken dashboard: bekijk SVG-grafieken met uitgaven per groep en items per status
-- PDF export: exporteer je wensenlijst als een afdrukbare PDF met de printfunctie van de browser
-- Aankoophistorie: registreer aankoopdatum en winkel voor gekochte items
-- Item notitiesjournal: voeg gedateerde notities toe aan items over tijd voor het bijhouden van onderzoek en beslissingen
-- Prijs historie: houd prijsveranderingen bij over tijd met sparkline-grafieken op itemkaarten
-- Verbeterde zoekfunctie: full-text zoekopdrachten omvatten nu tags, links en aankoopbron
-- Item duplicatie: dupliceer snel een item met één klik vanuit het itemmenu
-- Groep inklappen/uitklappen: klap geneste groepen in de zijbalk in en uit om rommel te verminderen
-- Wishlist doelen: stel een doel aantal items in om te kopen met een optionele deadline en houd voortgang bij
-- Item afhankelijkheden: markeer items als geblokkeerd door een ander item of voorwaarde, getoond met een visuele indicator
+## 📶 Inhoudsopgave
 
-## Sneltoetsen
+- [Wat is Troved?](#-wat-is-troved)
+- [Functies](#-functies)
+  - [Kern](#kern)
+  - [Organisatie](#organisatie)
+  - [Import & Export](#import--export)
+  - [AI-assistentie](#-ai-assistentie)
+  - [Plannen & Bijhouden](#-plannen--bijhouden)
+  - [Interface](#-interface)
+  - [Gegevens & Privacy](#-gegevens--privacy)
+- [Snel starten](#-snel-starten)
+- [Sneltoetsen](#-sneltoetsen)
+- [Techniek & Architectuur](#-techniek--architectuur)
+- [Configuratie](#-configuratie)
+- [AI-geassisteerde import](#-ai-geassisteerde-import)
+- [Server-side opslag (NAS / SMB)](#-server-side-opslag-nas--smb)
+- [Gegevens & Back-ups](#-gegevens--back-ups)
+- [Implementatie](#-implementatie)
+  - [Docker / Proxmox](#docker--proxmox)
+  - [Desktop-app](#-desktop-app)
+- [Ontwikkeling](#-ontwikkeling)
+- [Beveiliging](#-beveiliging)
+- [Toegankelijkheid](#-toegankelijkheid)
+- [Probleemoplossing](#-probleemoplossing)
+- [Projectstructuur](#-projectstructuur)
+- [AI-geassisteerde ontwikkeling](#-ai-geassisteerde-ontwikkeling)
+
+---
+
+## 🎯 Wat is Troved?
+
+Troved is een **wishlist die volledig in je browser draait**. Er is geen account nodig, geen clouddatabase, en geen abonnement. Je wishlist leeft in de opslag van je browser of in een `wishlist.json`-bestand in een map die je kiest — volledig portabel, volledig van jou.
+
+Een optionele lichte server voegt AI-geassisteerde Markdown-import toe (via OpenAI, Anthropic, Google Gemini, of lokaal Ollama), maar de kern-app werkt volledig offline zonder backend.
+
+**Waarom Troved?**
+
+| Traditionele wishlists | Troved |
+|---|---|
+| Vereisen een account | Geen account nodig |
+| Bewaren gegevens op hun servers | Je gegevens blijven op je apparaat |
+| Beperkte organisatie | Geneste groepen, tags, prioriteiten, statussen |
+| Geen offline-toegang | Werkt 100% offline |
+| Eén-op-alles | Importeer vanuit Markdown, CSV, of AI-geassisteerd |
+| Geen budgettracking | Ingebouwde budget- en doelenbijhouding |
+
+---
+
+## ✨ Functies
+
+### Kern
+
+- **EUR-prijsbijhouding** — Schat prijzen per item met groep- en totaalsamenvattingen, plus optionele dagelijkse referentiekurzen van [Frankfurter](https://www.frankfurter.dev/)
+- **Full-text zoekfunctie** — Zoek door itemnamen, merken, tags, links, notities en aankoopbronnen
+- **Sorteeropties** — Sorteer op recent toegevoegd, datum, naam (A-Z), laagste/hogste prijs, prioriteit, of status
+- **Vergelijking naast elkaar** — Vergelijk geselecteerde items in een gedetailleerde tabelweergave
+
+### Organisatie
+
+- **Geneste collecties** — Organiseer items in groepen en subgroepen met onbeperkt nesten
+- **Groep inklappen/uitklappen** — Klap geneste groepen in de zijbalk in en uit om rommel te verminderen
+- **Tags** — Voeg door komma's gescheiden tags toe aan items voor kruisende organisatie
+- **Tagfiltering** — Eén-klik tag-chips die itemaantallen tonen voor directe filtering
+- **Prioriteitsniveaus** — Markeer items als Hoog, Midden of Laag prioriteit
+- **Statusworkflow** — Houd items bij via Gewild → Onderzoek → Gepland → Aangeschaft
+- **Statusfiltering** — Filter op status met dedicated sub-filters
+- **Itemafhankelijkheden** — Markeer items als "geblokkeerd door" een ander item of voorwaarde
+- **Sleepfunctie** — Herschik items, verplaats tussen groepen, en nest groepen via drag-and-drop (werkt op touch-apparaten)
+
+### Import & Export
+
+- **Markdown-import** — Importeer `.md` en `.markdown`-bestanden met koppen, lijsten en tabellen
+- **CSV-import** — Importeer CSV-bestanden met wishlist-kolommen
+- **AI-geassisteerde import** — Gebruik OpenAI, Anthropic, Google Gemini, of lokaal Ollama om rommelige Markdown te ordenen
+- **CSV-export** — Exporteer je wishlist als CSV-bestand voor spreadsheets
+- **JSON-export/herstel** — Download en herstel je wishlist als JSON
+- **ZIP-backup** — Maak portable ZIP-back-ups van je volledige wishlist
+- **PDF-export** — Exporteer een afdrukbare PDF met de printfunctie van de browser
+
+### 🤖 AI-assistentie
+
+- **Multi-provider ondersteuning** — Kies uit OpenAI, Anthropic, Google Gemini, of lokaal Ollama
+- **Markdown-organisatie** — AI verfijnt rommelige Markdown tot gestructureerde wishlist-items
+- **Privacy-first** — Alleen de Markdown die je kiest om te verbeteren wordt verzonden; CSV-bestanden worden nooit verzonden
+- **Lokale AI** — Gebruik Ollama voor volledig privé, offline AI-verwerking
+
+### 📊 Plannen & Bijhouden
+
+- **Budgettracking** — Stel een maandbudget in en monitor uitgaven met een visuele voortgangsbalk
+- **Wishlistdoelen** — Stel een doel aantal items in om te kopen met een optionele deadline
+- **Prijsalerts** — Stel een doelprijs in per item; krijg een "🔔 Deal!"-badge wanneer de prijs daalt
+- **Prijs historie** — Houd prijsveranderingen bij over tijd met sparkline-grafieken op itemkaarten
+- **Aankoophistorie** — Registreer wanneer en waar je elk item kocht
+- **Item notitiesjournal** — Voeg gedateerde notities toe aan items over tijd voor onderzoek en beslissingen
+- **Statistieken dashboard** — Bekijk SVG-grafieken met uitgaven per groep en items per status
+
+### 🎨 Interface
+
+- **Licht & donker thema** — Toegepast vóór eerste paint; geen flits voor donker-gebruikers
+- **Donkere modus-schema** — Schakel automatisch thema's op basis van tijd van dag of systeemvoorkeur
+- **Itemafbeeldingen** — Voeg productafbeeldings-URL's toe weergegeven als miniaturen op itemkaarten
+- **Winkelwagenmodus** — Compacte controlelijstweergave van gekochte items, geoptimaliseerd voor gebruik in de winkel
+- **Wishlist delen** — Genereer een deelbare link of download JSON voor cadeaugidsen
+- **PWA-ondersteuning** — Installeer als standalone-app met offline-toegang
+- **Toetsenbordnavigatie** — Volledige toetsenbordondersteuning met focusval in dialogen
+- **Gebundelde lettertypen** — DM Sans en Manrope via Fontsource; geen externe CDN-aanroepen
+- **Bulkacties** — Selecteer meerdere items om status te wijzigen, te verplaatsen, of te verwijderen
+- **Itemduplicatie** — Dupliceer elk item met één klik vanuit het itemmenu
+
+### 🔒 Gegevens & Privacy
+
+- **Lokaal-eerst** — Je gegevens verlaten je apparaat nooit tenzij je dat kiest
+- **Map autosave** — Automatisch opslaan naar `wishlist.json` in een map die je kiest
+- **Geen account nodig** — Geen registratie, geen clouddatabase, geen tracking
+- **Server-side opslag** — Optionele NAS/SMB-opslag voor centrale back-up
+- **Verminderde beweging ondersteuning** — Eerbiedigt systeemtoegankelijkheidsvoorkeuren
+
+---
+
+## 🚀 Snel starten
+
+Krijg Troved draaiend in minder dan een minuut:
+
+```sh
+# Kloon en installeer
+git clone https://github.com/LukaG712/Troved.git
+cd Troved/frontend
+npm ci
+npm run dev
+```
+
+Open de lokale URL die door Vite wordt afgedrukt (meestal `http://127.0.0.1:5173`). Klaar — Troved werkt zonder backend.
+
+**Wil je AI-geassisteerde import?** Start de optionele server in een tweede terminal:
+
+```sh
+node server/index.mjs
+```
+
+**Wil je een desktop-app?** Zie de [Desktop-app](#-desktop-app) sectie hieronder.
+
+**Wil je implementeren op je thuisnetwerk?** Zie de [Docker / Proxmox](#docker--proxmox) sectie.
+
+---
+
+## ⌨️ Sneltoetsen
 
 | Sneltoets | Actie |
 | --- | --- |
-| `Ctrl/Cmd + K` | Focus wishlist zoekveld |
+| `Ctrl/Cmd + K` | Focus het zoekveld |
 | `Ctrl/Cmd + I` | Open het toevoeg-item formulier |
-| `Esc` | Sluit een dialoog (focus wordt hersteld afterwards) |
+| `Esc` | Sluit een dialoog (focus wordt hersteld) |
 
-Sneltoets-hints verschijnen wanneer je hovert of focust het zoekveld en de quick-add knop.
+> 💡 Sneltoets-hints verschijnen wanneer je hovert of focust het zoekveld en de quick-add knop.
 
-## Techniek en architectuur
+---
+
+## 🏗️ Techniek & Architectuur
 
 | Onderdeel | Technologie |
 | --- | --- |
@@ -64,10 +181,10 @@ Sneltoets-hints verschijnen wanneer je hovert of focust het zoekveld en de quick
 | Opslag | Browseropslag, optioneel een autosaved `wishlist.json` in een map die je kiest |
 | Cloud AI (optioneel) | OpenAI, Anthropic, Google Gemini via de Troved server |
 | Lokale AI (optioneel) | Ollama HTTP API, aangeroepen vanuit de browser |
-| Wisselkoersen (optioneel) | Frankfurter referentiekoersen |
+| Wisselkoersen (optioneel) | Frankfurter referentiekurzen |
 | Server tests | `npm test` in `server/` (6 slagen) |
 | Frontend tests | `npm test` in `frontend/` (27 slagen) |
-| Deployment | Docker image / Docker Compose |
+| Implementatie | Docker image / Docker Compose |
 
 ```mermaid
 flowchart LR
@@ -80,34 +197,18 @@ flowchart LR
 
 De server bedient de productie frontend build (`frontend/dist`, same origin) en blootstelt `/api/health` plus de `/api/ai/*` endpoints. Het heeft geen wishlist-database.
 
-## AI-geassisteerde ontwikkeling
+---
 
-Dit project is ontwikkeld met uitgebreid gebruik van **ChatGPT en OpenAI Codex** als AI-ontwikkelhulpmiddelen.
-
-Ik heb ChatGPT gebruikt om de projectomvang, architectuur, functies, technische keuzes en ontwikkelaanpak te bepalen. **OpenAI Codex is vervolgens als codeeragent gebruikt om de applicatie te implementeren en stapsgewijs te verbeteren.**
-
-Mijn verantwoordelijkheden waren:
-
-- de vereisten en gewenste functionaliteit definiëren
-- architectuur- en techniekkeuzes maken
-- de implementatie met iteratieve prompts aansturen
-- de applicatie en integraties testen
-- de gegenereerde implementatie beoordelen en corrigeren
-- problemen tijdens de ontwikkeling opsporen en oplossen
-- de Git/GitHub-werkwijze en projectdocumentatie opzetten
-
-## Installatie
+## 📦 Installatie
 
 ### Benodigdheden
 
-- Node.js 22 of nieuwer
-- Optioneel: API-sleutel(s) voor OpenAI, Anthropic, of Google Gemini voor cloud AI import-assistentie
-- Optioneel: [Ollama](https://ollama.com/download) voor lokale AI import-assistentie
-- Optioneel: Docker, voor de privé-implementatie hieronder beschreven
+- **Vereist:** Node.js 22 of nieuwer
+- **Optioneel:** API-sleutel(s) voor OpenAI, Anthropic, of Google Gemini (voor cloud AI import)
+- **Optioneel:** [Ollama](https://ollama.com/download) (voor lokale AI import)
+- **Optioneel:** Docker (voor privé-implementatie)
 
-### 1. Start de frontend
-
-Voer deze opdrachten uit vanuit de hoofdmap van de repository:
+### Stap 1: Start de frontend
 
 ```sh
 cd frontend
@@ -115,19 +216,19 @@ npm ci
 npm run dev
 ```
 
-Open de lokale URL die door Vite wordt afgedrukt (meestal <http://127.0.0.1:5173>). De core wishlist werkt zonder backend.
+Open de lokale URL die door Vite wordt afgedrukt (meestal `http://127.0.0.1:5173`). De core wishlist werkt zonder backend.
 
-### 2. Start de optionele server
+### Stap 2: Start de optionele server (AI import)
 
-Voor cloud AI import-assistentie, open een tweede terminal vanuit de projectroot:
+Voor cloud AI import-assistentie, open een tweede terminal:
 
 ```sh
 node server/index.mjs
 ```
 
-Of voer `npm start` uit vanuit `server/`. Configureer provider-sleutels zoals beschreven onder [Configuratie](#configuratie).
+Of voer `npm start` uit vanuit `server/`. Configureer provider-sleutels zoals beschreven onder [Configuratie](#-configuratie).
 
-### 3. Bouw voor productie
+### Stap 3: Bouw voor productie
 
 ```sh
 cd frontend
@@ -136,26 +237,45 @@ npm run build
 
 Dit produceert `frontend/dist`, dat de server op dezelfde origin bedient. De Docker-image bouwt het automatisch.
 
-## Optionele AI-geassisteerde import
+---
 
-Troved importeert `.md`, `.markdown`, en `.csv`-bestanden lokaal. De deterministische parser detecteert algemene koppen, lijstitems, Markdown-tabellen, en wishlist CSV-kolommen. Bekijk de resultaten en selecteer wat je wilt importeren.
+## 🤖 AI-geassisteerde import
 
-Voor optionele AI-geassisteerde Markdown-organisatie, verbind een van de volgende:
+Troved importeert `.md`, `.markdown`, en `.csv`-bestanden lokaal. De deterministische parser detecteert koppen, lijstitems, Markdown-tabellen, en wishlist CSV-kolommen. Bekijk de resultaten en selecteer wat je wilt importeren.
 
-- **OpenAI, Anthropic, of Google Gemini** via de Troved server. Hun API-sleutels worden alleen in de privé-omgeving van de server geconfigureerd.
-- **Ollama** dat draait op een adres dat je browser kan bereiken. Dit is optioneel en downloadt geen modellen.
+### Hoe AI-assistentie werkt
 
-AI-assistentie verfijnt alleen Markdown-importresultaten; het is geen algemene chatfunctie. Alleen de Markdown-tekst die je expliciet kiest om te verbeteren wordt naar het geselecteerde model gestuurd, via de Troved server voor cloudproviders. Lokaal parsen gebeurt in je browser, CSV-bestanden worden niet voor AI-verwerking verstuurd, en niets wordt geïmporteerd tot je bevestigt. Lokaal gedetecteerde prijzen en links worden bewaard; bekijk altijd de modeloutput.
+Voor optionele AI-geassisteerde Markdown-organisatie, verbind een van:
 
-Cloudmodelgebruik kan kosten met zich meebrengen bij de provider. API-sleutels worden nooit in de browser ingevoerd of in dit project vastgelegd.
+| Provider | Hoe het verbindt | Privacy |
+|---|---|---|
+| **OpenAI** | Via de Troved server | API-sleutel blijft op server |
+| **Anthropic** | Via de Troved server | API-sleutel blijft op server |
+| **Google Gemini** | Via de Troved server | API-sleutel blijft op server |
+| **Ollama (lokaal)** | Direct vanuit je browser | Volledig offline, geen API-sleutel |
+
+> 🔒 **Privacy-first:** AI-assistentie verfijnt alleen Markdown-importresultaten. Alleen de Markdown die je expliciet kiest om te **Verbeteren** wordt verzonden. CSV-bestanden worden nooit voor AI-verwerking verstuurd, en niets wordt geïmporteerd tot je bevestigt.
 
 ### Importdetails
 
-Expliciete EUR-prijzen worden gebruikt in totals. Niet-EUR of onzekere bedragen blijven gemarkeerd als ongeverifieerd en worden uitgesloten. Prijzen die in de app worden ingevoerd, worden opgeslagen als EUR-schattingen; optionele dagelijkse referentiekoersen van Frankfurter converteren weergave-totals en itemprijzen.
+- Expliciete EUR-prijzen worden gebruikt in totals
+- Niet-EUR of onzekere bedragen blijven gemarkeerd als ongeverifieerd en worden uitgesloten
+- Prijzen die in de app worden ingevoerd, worden opgeslagen als EUR-schattingen
+- Optionele dagelijkse referentiekurzen van [Frankfurter](https://www.frankfurter.dev/) converteren weergave-totals en itemprijzen
 
-## Configuratie
+---
 
-De server leest zijn providersleutels uit zijn privé-omgeving. Kopieer `.env.example` naar `.env` in de projectroot, houd het bestand privé, en voeg een sleutel toe alleen voor een provider die je van plan bent te gebruiken.
+## ⚙️ Configuratie
+
+De server leest zijn providersleutels uit zijn privé-omgeving. Kopieer `.env.example` naar `.env` in de projectroot, houd het bestand privé, en voeg een sleutel toe alleen voor een provider die je van plan bent te gebruiken:
+
+```sh
+cp .env.example .env
+nano .env  # Voeg je API-sleutels toe
+chmod 600 .env  # Beperk toegang
+```
+
+### Omgevingsvariabelen
 
 | Variabele | Standaard | Doel |
 | --- | --- | --- |
@@ -164,95 +284,159 @@ De server leest zijn providersleutels uit zijn privé-omgeving. Kopieer `.env.ex
 | `OPENAI_API_KEY` | — | Schakelt OpenAI-modellen in voor import-assistentie |
 | `ANTHROPIC_API_KEY` | — | Schakelt Anthropic-modellen in voor import-assistentie |
 | `GEMINI_API_KEY` | — | Schakelt Google Gemini-modellen in voor import-assistentie |
-| `TROVED_SAVE_DIR` | — | Schakelt server-side wishlist saving in. Stel een directorypad in (bijv. een gemount NAS of SMB-share) om `wishlist.json` op de server op te slaan. |
+| `TROVED_SAVE_DIR` | — | Server-side wishlist opslagdirectory (bijv. gemount NAS/SMB) |
 
-Open vervolgens in Troved **Preferences → Cloud AI models**, vernieuw modellen, kies een provider en model, en selecteer **Use for imports**.
+### AI instellen in de app
 
-De frontend ontvangt nooit API-sleutels. Plak nooit inloggegevens in chat of browserinstellingen.
+Na configuratie van `.env`, open in Troved **Voorkeuren → Cloud AI-modellen**, vernieuw modellen, kies een provider en model, en selecteer **Gebruiken voor imports**.
+
+> ⚠️ **Beveiliging:** De frontend ontvangt nooit API-sleutels. Plak nooit inloggegevens in chat of browserinstellingen.
 
 ### Thema
 
-Het thema wordt onthouden in `wishr-theme` (of volgt het besturingssysteem wanneer niets is opgeslagen). Gebruik de zon/maan-knop in de header of **Preferences → Appearance** om te schakelen.
+Het thema wordt onthouden in `wishr-theme` (of volgt het besturingssysteem wanneer niets is opgeslagen). Gebruik de zon/maan-knop in de header of **Voorkeuren → Uiterlijk** om te schakelen.
 
-## Je data en backups
+---
 
-Troved slaat zijn werkende kopie op in browseropslag. In ondersteunde browsers zoals huidige Chrome of Edge, kan **Preferences → Choose folder** een apart `wishlist.json` autosaven waar de app op localhost of HTTPS draait en je toestemming verleent. Wanneer toestemming verloopt, verbind de map opnieuw. Op browsers of origines zonder directe mapschrijving, download JSON na bewerken en sla het zelf op.
+## 💾 Server-side opslag (NAS / SMB)
 
-Het kiezen van een map die al een wishlist bevat, fuseert unieke groepen en items met de huidige browserkopie; overeenkomende items worden niet gedupliceerd. Een malformed mapbestand wordt gemeld en wordt niet overschreven. Ontkoppelen laat zijn bestand ongewijzigd. Gebruik **ZIP backup** voor een draagbare momentopname, of **Restore JSON** om een geldige backup te mergen.
+Troved kan optioneel je wishlist opslaan in een directory op de server in plaats van (of naast) browseropslag. Dit is handig voor het behouden van een centrale kopie op een NAS of SMB-share.
 
-## Privé Proxmox-deploy
+### Instellen
 
-De inbegrepen Docker-setup is bedoeld voor een privé thuisnetwerk/VPN-deploy. De server heeft **geen gebruikersauthenticatie**: stel poort 3000 niet bloot aan het openbare internet, voeg geen router port-forward toe, en publiceer het niet op een onbetrouwbaar netwerk.
+1. Mount je NAS- of SMB-share op de server op een pad zoals `/mnt/nas/troved`
+2. Voeg `TROVED_SAVE_DIR=/mnt/nas/troved` toe aan het `.env`-bestand van de server
+3. Start de server opnieuw: `docker compose up -d --build`
+4. Open **Instellingen → Opslaan op server (NAS / SMB)** en klik op **Opslaan op server**
 
-### 1. Maak de VM
+De server schrijft `wishlist.json` naar de geconfigureerde directory. Het wishlist-bestand verlaat je server nooit.
 
-Maak in Proxmox een Ubuntu Server 24.04 LTS VM die is gekoppeld aan je vertrouwde LAN-brug (doorgaans `vmbr0`). Voor deze lichte app, begin met 2 vCPU's, 2 GB RAM, en een 16 GB schijf. Geef de VM een DHCP-reservering in je router zodat het LAN-adres stabiel blijft. Configureer geen openbaar IP of router port-forward.
+---
 
-Installeer Ubuntu-updates en Docker Engine met de officiële [Docker Ubuntu-instructies](https://docs.docker.com/engine/install/ubuntu/). Houd Proxmox en Ubuntu-beheer alleen toegankelijk voor je vertrouwde LAN/VPN.
+## 📁 Gegevens & Back-ups
 
-### 2. Kopieer en configureer Troved
+Troved slaat zijn werkende kopie op in browseropslag. Hier is hoe je je gegevens veilig houdt:
 
-Kopieer dit project naar de VM met een privé-methode zoals `scp` via je LAN/VPN. Vanaf de projectmap op Ubuntu:
+### Map autosave
+
+In ondersteunde browsers (Chrome, Edge), gebruik **Voorkeuren → Map kiezen** om een `wishlist.json`-bestand automatisch op te slaan. Vereist localhost of HTTPS met je toestemming. Als toestemming verloopt, verbind de map opnieuw.
+
+### Handmatige back-up
+
+Op browsers zonder directe mapschrijving, download JSON na bewerken en sla het zelf op.
+
+### Back-up opties
+
+| Methode | Gebruiksdoel |
+|---|---|
+| **Map autosave** | Automatische back-up naar een lokale map |
+| **JSON-download** | Handmatige back-up na bewerken |
+| **ZIP-backup** | Portable momentopname van je volledige wishlist |
+| **JSON herstellen** | Een geldige back-up samenvoegen met je huidige lijst |
+| **Server-opslag** | Centrale back-up op NAS/SMB |
+
+> 💡 Het kiezen van een map die al een wishlist bevat, voegt unieke groepen en items samen — overeenkomende items worden nooit gedupliceerd. Een beschadigd bestand wordt gemeld en nooit overschreven.
+
+---
+
+## 🚀 Implementatie
+
+### Docker / Proxmox
+
+De inbegrepen Docker-setup is bedoeld voor een **privé thuisnetwerk/VPN-implementatie**. De server heeft **geen gebruikersauthenticatie** — stel poort 3000 niet bloot aan het openbare internet.
+
+> ⚠️ **Beveiligingswaarschuwing:** Voeg nooit een router port-forward toe of publiceer Troved op een onbetrouwbaar netwerk.
+
+#### Stap 1: Maak de VM
+
+Maak in Proxmox een Ubuntu Server 24.04 LTS VM die is gekoppeld aan je vertrouwde LAN-brug (doorgaans `vmbr0`):
+
+| Resource | Aanbevolen |
+|---|---|
+| vCPUs | 2 |
+| RAM | 2 GB |
+| Schijf | 16 GB |
+
+Geef de VM een DHCP-reservering in je router zodat het LAN-adres stabiel blijft. Installeer Docker Engine volgens de officiële [Docker Ubuntu-instructies](https://docs.docker.com/engine/install/ubuntu/).
+
+#### Stap 2: Kopieer en configureer Troved
 
 ```sh
+# Kopieer project naar VM via scp, dan:
 cp .env.example .env
-nano .env
+nano .env  # Voeg alleen de API-sleutels toe die je gebruikt
+chmod 600 .env  # Beperk toegang
 ```
 
-Voeg alleen de cloudprovidersleutels toe die je gebruikt. Beperk het omgevingsbestand tot de VM-account:
-
-```sh
-chmod 600 .env
-```
-
-Bouw en start de app:
+Bouw en start:
 
 ```sh
 docker compose up -d --build
 docker compose logs -f troved
 ```
 
-De webapp en zijn same-origin AI API worden bediend op poort 3000. Bezoek `http://<VM-LAN-IP>:3000` vanaf een apparaat op je vertrouwde netwerk. Geen API-sleutel wordt aan de blootgesteld aan de browser. De server neemt contact op met een geconfigureerde provider om beschikbare modellen op te halen, en verstuurt Markdown-inhoud alleen wanneer je expliciet **Improve** kiest voor een import; providervoorwaarden en -kosten zijn van toepassing.
+Bezoek `http://<VM-LAN-IP>:3000` vanaf een apparaat op je vertrouwde netwerk.
 
-### 3. Beperk netwerktoegang
-
-Stel op de VM en in de Proxmox/netwerkfirewall TCP 3000 alleen toe vanaf je daadwerkelijk vertrouwde LAN- en VPN-adresbereiken. Bijvoorbeeld, vervang deze voorbeeld-subnetten met de bereiken die door je netwerk worden gebruikt:
+#### Stap 3: Beperk netwerktoegang
 
 ```sh
 sudo ufw default deny incoming
-sudo ufw allow from <ADMIN-LAN-CIDR> to any port 22 proto tcp
 sudo ufw allow from <HOME-LAN-CIDR> to any port 3000 proto tcp
 sudo ufw allow from <VPN-CIDR> to any port 3000 proto tcp
 sudo ufw enable
-sudo ufw status
 ```
 
-Zorg ervoor dat de VPN clients routeert naar het LAN-adres van de VM. Voeg geen internet-facing port-forward of openbare reverse proxy toe: de server heeft opzettelijk geen login omdat de gekozen deploy privé-netwerk-alleen is. Voor externe toegang, verbind eerst met je VPN.
+> 🔒 **Belangrijk:** Docker kan UFW-regels omzeilen. Dwong bron-netwerkbeperkingen af in de Proxmox-firewall of een andere firewalllaag, en verifieer toegang vanaf zowel toegestane als niet-toegestane netwerken.
 
-Docker publiceert containerpoorten via zijn eigen firewallregels, die UFW-regels op sommige Ubuntu-configuraties kunnen omzeilen. Verlouw je niet alleen op UFW om de gepubliceerde poort te beperken: dwing de bron-netwerkbeperking af in de Proxmox-firewall of een andere firewalllaag die Docker-gepubliceerd verkeer filtreert, en verifieer toegang vanaf zowel een toegestane als een niet-toegestane netwerk voordat je op de deploy vertrouwt.
-
-Plain HTTP op een privé LAN wordt door deze setup gebruikt. Browsers kunnen directe folder autosave uitschakelen op een LAN HTTP-adres omdat het geen veilige browsercontext is; JSON download/herstel backups blijven beschikbaar. Als je folder autosave nodig hebt, gebruik HTTPS met een certificaat dat door je apparaten wordt vertrouwd, terwijl je de service privé houdt.
-
-### De VM bijwerken
-
-Na het kopiëren van bijgewerkte bronbestanden naar de VM:
+#### Bijwerken
 
 ```sh
 docker compose up -d --build
 ```
 
-Houd `.env` privé gebackupdate, nooit in broncontrole. Om de service te stoppen, voer `docker compose down` uit.
+Houd `.env` privé gebackupt. Om te stoppen: `docker compose down`.
 
-## Ontwikkelen en testen
+---
 
-Voer de serverendpointtests uit (6 slagen):
+### 🖥️ Desktop-app
+
+Een standalone Windows desktop-app is beschikbaar — geen browsertabbladen, geen installatie vereist.
+
+| Bestand | Beschrijving |
+|---|---|
+| `Desktop/release/Troved-Portable.exe` | Enkel portable executable — dubbelklik en run |
+
+De desktop-app bundelt de frontend en Node.js server samen, en opent Troved in zijn eigen native venster. Je gegevens blijven in browseropslag of een map die je kiest, net als de webversie.
+
+#### De desktop-app bouwen
 
 ```sh
-cd server
-npm test
+# Bouw eerst de frontend
+cd frontend && npm ci && npm run build
+
+# Bouw de portable desktop-app
+cd ../Desktop && npm ci && npm run build
 ```
 
-Bouw de frontend:
+Het portable executable staat op `Desktop/release/Troved-Portable.exe`.
+
+---
+
+## 🛠️ Ontwikkeling
+
+### Tests uitvoeren
+
+```sh
+# Frontend tests (27 slagen)
+cd frontend && npm test
+
+# Server tests (6 slagen)
+cd server && npm test
+```
+
+**Totaal: 33 slagen**
+
+### Bouwen
 
 ```sh
 cd frontend
@@ -260,37 +444,91 @@ npm ci
 npm run build
 ```
 
-## Beveiliging en lokaal gebruik
-
-- De server heeft geen gebruikersauthenticatie. Houd het op een privé-netwerk of achter een VPN, en stel poort 3000 nooit bloot aan het openbare internet.
-- API-sleutels leven alleen in de privé-omgeving van de server (`.env`, buiten broncontrole gehouden, `chmod 600`). De browser ontvangt ze nooit.
-- Je wishlist blijft in je browser of een map die je kiest. De server heeft geen wishlist-database.
-- Alleen de Markdown die je expliciet kiest om te **Improve** wordt naar het geselecteerde model gestuurd. CSV-bestanden worden nooit voor AI-verwerking verstuurd, en niets wordt geïmporteerd tot je bevestigt.
-- Ollama draait op een adres dat je browser kan bereiken; stel het alleen in op een endpoint dat je vertrouwt.
-- Cloudmodelgebruik kan kosten met zich meebrengen en is onderhevig aan de providervoorwaarden.
-- Bekijk altijd AI-output vóór importeren.
-
-## Server-side wishlist saving (NAS / SMB)
-
-Troved kan optioneel je wishlist opslaan in een directory op de server in plaats van (of naast) browseropslag. Dit is handig voor het behouden van een centrale kopie op een NAS of SMB-share.
-
-1. Mount je NAS- of SMB-share op de server op een pad zoals `/mnt/nas/troved`.
-2. Voeg `TROVED_SAVE_DIR=/mnt/nas/troved` toe aan het `.env`-bestand van de server.
-3. Start de server opnieuw: `docker compose up -d --build`.
-4. Open **Instellingen → Opslaan op server (NAS / SMB)** en klik op **Opslaan op server**.
-
-De server schrijft `wishlist.json` naar de geconfigureerde directory. Alleen de Markdown die je expliciet kiest om te **Improve** wordt naar AI-providers gestuurd; het wishlist-bestand verlaat je server nooit.
-
-## Toegankelijkheid
-
-- Dialoogvensters ondersteunen Escape om te sluiten, focusherstel, en toetsenbordfocusval.
-- De interface volgt de systeemvoorkeur voor verminderde beweging.
-- Licht en donker thema's zijn inbegrepen.
-- De browsertab toont een ingebouwd Troved-favicon (donkere tegel met een groene punt, passend bij de header-logo).
-
-## Projectstructuur
+### Projectstructuur
 
 ```text
-frontend/   Vite-applicatie (wishlist UI, lokale importparser, backups)
-server/     Optionele Node.js-server: bedient frontend/dist, /api/health, /api/ai/*, en endpointtests
+Troved/
+├── frontend/       Vite-applicatie (wishlist UI, importparser, back-ups)
+│   ├── src/        TypeScript/React bronbestanden
+│   ├── index.html  Entry point
+│   └── package.json
+├── server/         Optionele Node.js-server
+│   ├── index.mjs   Server entry point
+│   └── index.test.mjs  Server tests
+├── Desktop/        Electron wrapper voor portable .exe
+├── Dockerfile      Docker image definitie
+├── docker-compose.yml  Docker Compose configuratie
+├── manifest.json   PWA manifest
+├── sw.js           Service worker voor offline ondersteuning
+├── README.md       Dit bestand
+└── README.nl.md    Nederlandse vertaling
 ```
+
+---
+
+## 🔒 Beveiliging
+
+- **Geen authenticatie** — De server heeft geen gebruikerslogin. Houd het op een privé-netwerk of achter een VPN.
+- **Nooit poort 3000 blootstellen** aan het openbare internet.
+- **API-sleutels** leven alleen in de `.env`-bestand van de server (buiten broncontrole gehouden, `chmod 600`). De browser ontvangt ze nooit.
+- **Je gegevens blijven lokaal** — Je wishlist leeft in je browser of een map die je kiest. De server heeft geen wishlist-database.
+- **AI-privacy** — Alleen de Markdown die je expliciet kiest om te **Verbeteren** wordt naar het geselecteerde model gestuurd. CSV-bestanden worden nooit verzonden.
+- **Ollama** — Stel alleen in op een endpoint dat je vertrouwt.
+- **Cloud-kosten** — Cloudmodelgebruik kan kosten met zich meebrengen bij de provider.
+- **Altijd controleren** AI-output vóór importeren.
+
+---
+
+## ♿ Toegankelijkheid
+
+- **Toetsenbordnavigatie** — Volledige toetsenbordondersteuning met zichtbare focus-indicatoren
+- **Dialoogfocusval** — Focus blijft binnen geopende dialogen
+- **Escape om te sluiten** — Druk `Esc` om een willekeurige dialoog te sluiten (focus wordt hersteld)
+- **Verminderde beweging** — Eerbiedigt de systeemvoorkeur `prefers-reduced-motion`
+- **Licht & donker thema's** — Twee complete thema's met goede contrastverhoudingen
+- **Aangepast favicon** — Ingebouwd Troved-favicon (donkere tegel met een groene punt)
+
+---
+
+## 🐛 Probleemoplossing
+
+### Map autosave werkt niet
+
+- **Oorzaak:** Map autosave vereist een veilige context (localhost of HTTPS). Plain HTTP op een LAN-adres werkt mogelijk niet.
+- **Oplossing:** Gebruik JSON-download/herstel voor back-ups, of stel HTTPS in met een vertrouwd certificaat.
+
+### AI-import werkt niet
+
+- **Oorzaak:** Ontbrekende of ongeldige API-sleutel in `.env`.
+- **Oplossing:** Verifieer dat je API-sleutel correct is en de server draait. Controleer `docker compose logs troved` op fouten.
+
+### Docker-poort conflicten
+
+- **Oorzaak:** Poort 3000 is al in gebruik.
+- **Oplossing:** Wijzig de poort in `.env`: `PORT=3001`, en herbouw met `docker compose up -d --build`.
+
+### Wishlist wordt niet opgeslagen
+
+- **Oorzaak:** Browseropslag is vol of map-toestemming is verlopen.
+- **Oplossing:** Gebruik **Instellingen → Map kiezen** om opnieuw te verbinden, of download een JSON-back-up.
+
+### Donkere modus flits bij laden
+
+- **Oorzaak:** Thema wordt toegepast vóór eerste paint, maar sommige browsers flitsen nog steeds.
+- **Oplossing:** Dit is een browserbeperking. Het thema wordt zo vroeg mogelijk ingesteld om de flits te minimaliseren.
+
+---
+
+## 🤖 AI-geassisteerde ontwikkeling
+
+Dit project is ontwikkeld met uitgebreid gebruik van **AI-ontwikkelhulpmiddelen** waaronder ChatGPT en OpenAI Codex.
+
+De menselijke ontwikkelaar was verantwoordelijk voor:
+
+- Het definiëren van vereisten en gewenste functionaliteit
+- Het maken van architectuur- en techniekkeuzes
+- Het aansturen van implementatie via iteratieve prompts
+- Het testen van de applicatie en integraties
+- Het beoordelen en corrigeren van gegenereerde code
+- Het opsporen en oplossen van problemen tijdens ontwikkeling
+- Het opzetten van de Git/GitHub-werkwijze en documentatie

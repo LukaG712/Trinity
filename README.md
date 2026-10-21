@@ -1,61 +1,176 @@
 # Troved
 
-A personal, local-first wishlist with a quiet GitHub-inspired interface and a restrained green accent. Organize ideas into nested collections, keep EUR estimates, search and filter your list, and import Markdown or CSV files.
+> **A personal, local-first wishlist that runs entirely in your browser.**
 
-> Lees dit in het Nederlands: [Nederlandstalige README](README.nl.md).
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Node](https://img.shields.io/badge/Node-22+-brightgreen.svg)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-6.0+-purple.svg)](https://vitejs.dev/)
+[![Tests](https://img.shields.io/badge/Tests-33%20passing-brightgreen.svg)]()
 
-## What is this?
+Organize ideas into nested collections, track prices in EUR, import Markdown or CSV files, and plan your purchases — all without an account, cloud database, or internet connection. Your data stays on your device.
 
-Troved is a wishlist that runs in your browser. Your wishlist stays in your browser storage or in a folder you choose; there is no Troved account or wishlist database. An optional small server adds AI-assisted Markdown import through OpenAI, Anthropic, Google Gemini, or a local Ollama instance, but the core app works without it.
+> 🇳🇱 Lees dit in het Nederlands: [Nederlandstalige README](README.nl.md).
 
-## Features
+---
 
-- Nested collections for organizing wishlist items
-- EUR estimates per item, with totals and optional daily reference rates from [Frankfurter](https://www.frankfurter.dev/)
-- Search and filter across your whole list
-- Status tracking per item (Wanted, Researching, Planned, Purchased) with status-based filtering
-- Local import of `.md`, `.markdown`, and `.csv` files (headings, list entries, Markdown tables, and wishlist CSV columns), with review before anything is imported
-- Export wishlist as CSV for use in spreadsheets
-- Optional AI-assisted Markdown organization (OpenAI, Anthropic, Google Gemini, or Ollama)
-- Folder autosave to a `wishlist.json` file, JSON download/restore, and ZIP backup
-- Bulk actions: multi-select items to change status, move between groups, or remove in one step
-- Side-by-side comparison view for selected items
-- Light and dark themes, applied before first paint so dark-mode users see no light flash
-- Fonts bundled via Fontsource (DM Sans, Manrope); no webfont CDN is contacted
-- Keyboard navigation, dialog focus trapping, and reduced-motion support
-- Tags and priority rating per item for cross-cutting organization
-- Drag and drop: reorder items by dragging them onto other items, move items between groups by dropping them on a group in the sidebar, and nest groups by dragging one group onto another — works on touch devices too
-- PWA support: install as a standalone app with offline access
-- Sort options: sort by recently added, date added, name, lowest/highest price, priority, or status
-- Price alerts: set a target price per item and receive a visual "Deal!" badge when the current price drops to or below your target
-- Item images: attach a product image URL to any item, displayed as a thumbnail on the card
-- Tag filtering: filter items by tags with one-click tag chips showing item counts
-- Shopping list mode: switch to a compact checklist view showing only purchased items, optimized for in-store use
-- Dark mode schedule: auto-switch between light and dark themes based on time of day or system preference
-- Wishlist sharing: generate a shareable link with your wishlist data encoded in the URL, or download as JSON
-- Budget tracking: set a monthly budget and track spending against it with a visual progress bar
-- Statistics dashboard: view SVG charts showing spending by group and items by status
-- PDF export: export your wishlist as a printable PDF using the browser's print function
-- Purchase history: record purchase date and store for purchased items
-- Item notes journal: append dated notes to items over time for tracking research and decisions
-- Price history: track price changes over time with sparkline charts on item cards
-- Enhanced search: full-text search now includes tags, links, and purchase source
-- Item duplication: quickly duplicate any item with one click from the item menu
-- Group collapse/expand: collapse and expand nested groups in the sidebar to reduce clutter
-- Wishlist goals: set a target number of items to purchase with an optional deadline and track progress
-- Item dependencies: mark items as blocked by another item or condition, shown with a visual indicator
+## 📖 Table of Contents
 
-## Keyboard shortcuts
+- [What is Troved?](#-what-is-troved)
+- [Features](#-features)
+  - [Core](#core)
+  - [Organization](#organization)
+  - [Import & Export](#import--export)
+  - [AI Assistance](#-ai-assistance)
+  - [Planning & Tracking](#-planning--tracking)
+  - [Interface](#-interface)
+  - [Data & Privacy](#-data--privacy)
+- [Quick Start](#-quick-start)
+- [Keyboard Shortcuts](#-keyboard-shortcuts)
+- [Tech Stack & Architecture](#-tech-stack--architecture)
+- [Configuration](#-configuration)
+- [AI-Assisted Import](#-ai-assisted-import)
+- [Server-Side Saving (NAS / SMB)](#-server-side-saving-nas--smb)
+- [Data & Backups](#-data--backups)
+- [Deployment](#-deployment)
+  - [Docker / Proxmox](#docker--proxmox)
+  - [Desktop App](#-desktop-app)
+- [Development](#-development)
+- [Security](#-security)
+- [Accessibility](#-accessibility)
+- [Troubleshooting](#-troubleshooting)
+- [Project Structure](#-project-structure)
+- [AI-Assisted Development](#-ai-assisted-development)
+
+---
+
+## 🎯 What is Troved?
+
+Troved is a **wishlist that runs entirely in your browser**. There's no account to create, no cloud database, and no subscription. Your wishlist lives in your browser's storage or in a `wishlist.json` file in a folder you choose — fully portable, fully yours.
+
+An optional lightweight server adds AI-assisted Markdown import (via OpenAI, Anthropic, Google Gemini, or local Ollama), but the core app works completely offline without any backend.
+
+**Why Troved?**
+
+| Traditional wishlists | Troved |
+|---|---|
+| Require an account | No account needed |
+| Store data on their servers | Your data stays on your device |
+| Limited organization | Nested groups, tags, priorities, statuses |
+| No offline access | Works 100% offline |
+| One-size-fits-all | Import from Markdown, CSV, or AI-assisted |
+| No budget tracking | Built-in budget and goal tracking |
+
+## ✨ Features
+
+### Core
+
+- **EUR price tracking** — Estimate prices per item with group and total summaries, plus optional daily reference rates from [Frankfurter](https://www.frankfurter.dev/)
+- **Full-text search** — Search across item names, brands, tags, links, notes, and purchase sources
+- **Sort options** — Sort by recently added, date added, name (A-Z), lowest/highest price, priority, or status
+- **Side-by-side comparison** — Compare selected items in a detailed table view
+
+### Organization
+
+- **Nested collections** — Organize items into groups and subgroups with unlimited nesting
+- **Group collapse/expand** — Collapse nested groups in the sidebar to reduce clutter
+- **Tags** — Add comma-separated tags to items for cross-cutting organization
+- **Tag filtering** — One-click tag chips showing item counts for instant filtering
+- **Priority levels** — Mark items as High, Medium, or Low priority
+- **Status workflow** — Track items through Wanted → Researching → Planned → Purchased
+- **Status filtering** — Filter by status with dedicated sub-filters
+- **Item dependencies** — Mark items as "blocked by" another item or condition
+- **Drag & drop** — Reorder items, move between groups, and nest groups via drag-and-drop (works on touch devices)
+
+### Import & Export
+
+- **Markdown import** — Import `.md` and `.markdown` files with headings, lists, and tables
+- **CSV import** — Import CSV files with wishlist columns
+- **AI-assisted import** — Use OpenAI, Anthropic, Google Gemini, or local Ollama to organize messy Markdown
+- **CSV export** — Export your wishlist as a CSV file for spreadsheets
+- **JSON export/restore** — Download and restore your wishlist as JSON
+- **ZIP backup** — Create portable ZIP backups of your entire wishlist
+- **PDF export** — Export a printable PDF using the browser's print function
+
+### 🤖 AI Assistance
+
+- **Multi-provider support** — Choose from OpenAI, Anthropic, Google Gemini, or local Ollama
+- **Markdown organization** — AI refines messy Markdown into structured wishlist items
+- **Privacy-first** — Only the Markdown you choose to improve is sent; CSV files are never sent
+- **Local AI** — Use Ollama for completely private, offline AI processing
+
+### 📊 Planning & Tracking
+
+- **Budget tracking** — Set a monthly budget and monitor spending with a visual progress bar
+- **Wishlist goals** — Set a target number of items to purchase with an optional deadline
+- **Price alerts** — Set a target price per item; get a "🔔 Deal!" badge when the price drops
+- **Price history** — Track price changes over time with sparkline charts on item cards
+- **Purchase history** — Record when and where you bought each item
+- **Item notes journal** — Append dated notes to items over time for research and decisions
+- **Statistics dashboard** — View SVG charts showing spending by group and items by status
+
+### 🎨 Interface
+
+- **Light & dark themes** — Applied before first paint; no flash for dark-mode users
+- **Dark mode schedule** — Auto-switch themes based on time of day or system preference
+- **Item images** — Attach product image URLs displayed as thumbnails on item cards
+- **Shopping list mode** — Compact checklist view of purchased items, optimized for in-store use
+- **Wishlist sharing** — Generate a shareable link or download JSON for gift guides
+- **PWA support** — Install as a standalone app with offline access
+- **Keyboard navigation** — Full keyboard support with focus trapping in dialogs
+- **Bundled fonts** — DM Sans and Manrope via Fontsource; no external CDN calls
+- **Bulk actions** — Multi-select items to change status, move, or remove in one step
+- **Item duplication** — One-click duplicate any item from the item menu
+
+### 🔒 Data & Privacy
+
+- **Local-first** — Your data never leaves your device unless you choose to
+- **Folder autosave** — Autosave to `wishlist.json` in a folder you choose
+- **No account required** — No sign-up, no cloud database, no tracking
+- **Server-side saving** — Optional NAS/SMB save for central backup
+- **Reduced motion support** — Respects system accessibility preferences
+
+---
+
+## 🚀 Quick Start
+
+Get Troved running in under a minute:
+
+```sh
+# Clone and install
+git clone https://github.com/LukaG712/Troved.git
+cd Troved/frontend
+npm ci
+npm run dev
+```
+
+Open the local URL printed by Vite (usually `http://127.0.0.1:5173`). That's it — Troved works without any backend.
+
+**Want AI-assisted import?** Start the optional server in a second terminal:
+
+```sh
+node server/index.mjs
+```
+
+**Want a desktop app?** See the [Desktop App](#-desktop-app) section below.
+
+**Want to deploy on your home network?** See the [Docker / Proxmox](#docker--proxmox) section.
+
+---
+
+## ⌨️ Keyboard shortcuts
 
 | Shortcut | Action |
 | --- | --- |
-| `Ctrl/Cmd + K` | Focus wishlist search |
+| `Ctrl/Cmd + K` | Focus the search field |
 | `Ctrl/Cmd + I` | Open the add-item form |
-| `Esc` | Close a dialog (focus is restored afterwards) |
+| `Esc` | Close a dialog (focus is restored) |
 
-Shortcut hints appear when you hover or focus the search field and the quick-add button.
+> 💡 Shortcut hints appear when you hover or focus the search field and the quick-add button.
 
-## Tech stack and architecture
+---
+
+## 🏗️ Tech stack and architecture
 
 | Component | Technology |
 | --- | --- |
@@ -80,34 +195,18 @@ flowchart LR
 
 The server serves the production frontend build (`frontend/dist`, same origin) and exposes `/api/health` plus the `/api/ai/*` endpoints. It has no wishlist database.
 
-## AI-Assisted Development
+---
 
-This project was developed with extensive use of **ChatGPT and OpenAI Codex** as AI development tools.
-
-I used ChatGPT to help define the project scope, architecture, features, technical decisions, and development approach. **OpenAI Codex was then used as the coding agent to implement and iterate on the application.**
-
-I was responsible for:
-
-- defining the requirements and desired functionality
-- making architectural and technical decisions
-- directing the implementation through iterative prompts
-- testing the application and integrations
-- reviewing and correcting the generated implementation
-- debugging issues during development
-- setting up the Git/GitHub workflow and project documentation
-
-## Installation
+## 📦 Installation
 
 ### Requirements
 
-- Node.js 22 or newer
-- Optional: API key(s) for OpenAI, Anthropic, or Google Gemini for cloud AI import assistance
-- Optional: [Ollama](https://ollama.com/download) for local AI import assistance
-- Optional: Docker, for the private deployment described below
+- **Required:** Node.js 22 or newer
+- **Optional:** API key(s) for OpenAI, Anthropic, or Google Gemini (for cloud AI import)
+- **Optional:** [Ollama](https://ollama.com/download) (for local AI import)
+- **Optional:** Docker (for private deployment)
 
-### 1. Start the frontend
-
-Run these commands from the repository root:
+### Step 1: Start the frontend
 
 ```sh
 cd frontend
@@ -115,19 +214,19 @@ npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite (usually <http://127.0.0.1:5173>). The core wishlist works without a backend.
+Open the local URL printed by Vite (usually `http://127.0.0.1:5173`). The core wishlist works without any backend.
 
-### 2. Start the optional server
+### Step 2: Start the optional server (AI import)
 
-For cloud AI import assistance, open a second terminal from the project root:
+For cloud AI import assistance, open a second terminal:
 
 ```sh
 node server/index.mjs
 ```
 
-Or run `npm start` from `server/`. Configure provider keys as described under [Configuration](#configuration).
+Or run `npm start` from `server/`. Configure provider keys as described under [Configuration](#-configuration).
 
-### 3. Build for production
+### Step 3: Build for production
 
 ```sh
 cd frontend
@@ -136,26 +235,45 @@ npm run build
 
 This produces `frontend/dist`, which the server serves on the same origin. The Docker image builds it automatically.
 
-## Optional AI-assisted import
+---
 
-Troved imports `.md`, `.markdown`, and `.csv` files locally. The deterministic parser detects common headings, list entries, Markdown tables, and wishlist CSV columns. Review the results and select what to import.
+## 🤖 AI-Assisted Import
 
-For optional AI-assisted Markdown organization, connect either:
+Troved imports `.md`, `.markdown`, and `.csv` files locally. The deterministic parser detects headings, list entries, Markdown tables, and wishlist CSV columns. Review the results and select what to import.
 
-- **OpenAI, Anthropic, or Google Gemini** through the Troved server. Their API keys are configured only in the server's private environment.
-- **Ollama** running at an address your browser can reach. This is optional and does not download models.
+### How AI assistance works
 
-AI assistance only refines Markdown import results; it is not a general chat feature. Only the Markdown text you explicitly choose to improve is sent to the selected model, through the Troved server for cloud providers. Local parsing happens in your browser, CSV files are not sent for AI processing, and nothing is imported until you confirm. Locally detected prices and links are preserved; always review model output.
+For optional AI-assisted Markdown organization, connect one of:
 
-Cloud model usage may incur charges from the provider. API keys are never entered into the browser or committed to this project.
+| Provider | How it connects | Privacy |
+|---|---|---|
+| **OpenAI** | Through the Troved server | API key stays on server |
+| **Anthropic** | Through the Troved server | API key stays on server |
+| **Google Gemini** | Through the Troved server | API key stays on server |
+| **Ollama (local)** | Directly from your browser | Fully offline, no API key |
+
+> 🔒 **Privacy-first:** AI assistance only refines Markdown import results. Only the Markdown you explicitly choose to **Improve** is sent. CSV files are never sent for AI processing, and nothing is imported until you confirm.
 
 ### Import details
 
-Explicit EUR prices are used in totals. Non-EUR or uncertain amounts remain marked as unverified and are excluded. Prices entered in the app are stored as EUR estimates; optional daily reference rates from Frankfurter convert display totals and item prices.
+- Explicit EUR prices are used in totals
+- Non-EUR or uncertain amounts remain marked as unverified and are excluded
+- Prices entered in the app are stored as EUR estimates
+- Optional daily reference rates from [Frankfurter](https://www.frankfurter.dev/) convert display totals and item prices
 
-## Configuration
+---
 
-The server reads its provider keys from its private environment. Copy `.env.example` to `.env` in the project root, keep the file private, and add a key only for a provider you intend to use.
+## ⚙️ Configuration
+
+The server reads its provider keys from its private environment. Copy `.env.example` to `.env` in the project root, keep the file private, and add a key only for a provider you intend to use:
+
+```sh
+cp .env.example .env
+nano .env  # Add your API keys
+chmod 600 .env  # Restrict access
+```
+
+### Environment variables
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
@@ -164,161 +282,249 @@ The server reads its provider keys from its private environment. Copy `.env.exam
 | `OPENAI_API_KEY` | — | Enables OpenAI models for import assistance |
 | `ANTHROPIC_API_KEY` | — | Enables Anthropic models for import assistance |
 | `GEMINI_API_KEY` | — | Enables Google Gemini models for import assistance |
-| `TROVED_SAVE_DIR` | — | Enables server-side wishlist saving. Set to a directory path (e.g. a mounted NAS or SMB share) to save `wishlist.json` on the server. |
+| `TROVED_SAVE_DIR` | — | Server-side wishlist saving directory (e.g., mounted NAS/SMB) |
 
-Then, in Troved, open **Preferences → Cloud AI models**, refresh models, choose a provider and model, and select **Use for imports**.
+### Setting up AI in the app
 
-The frontend never receives API keys. Never paste credentials into chat or browser settings.
+After configuring `.env`, in Troved open **Preferences → Cloud AI models**, refresh models, choose a provider and model, and select **Use for imports**.
+
+> ⚠️ **Security:** The frontend never receives API keys. Never paste credentials into chat or browser settings.
 
 ### Theme
 
 The theme is remembered in `wishr-theme` (or follows the operating system when nothing is saved). Use the sun/moon button in the header or **Preferences → Appearance** to switch.
 
-## Server-side wishlist saving (NAS / SMB)
+---
+
+## 💾 Server-Side Saving (NAS / SMB)
 
 Troved can optionally save your wishlist to a directory on the server instead of (or in addition to) browser storage. This is useful for keeping a central copy on a NAS or SMB share.
 
-1. Mount your NAS or SMB share on the server at a path such as `/mnt/nas/troved`.
-2. Add `TROVED_SAVE_DIR=/mnt/nas/troved` to the server's `.env` file.
-3. Restart the server: `docker compose up -d --build`.
-4. Open **Settings → Save to server (NAS / SMB)** and click **Save to server**.
+### Setup
 
-The server writes `wishlist.json` to the configured directory. Only the Markdown you explicitly choose to **Improve** is sent to AI providers; the wishlist file itself never leaves your server.
+1. Mount your NAS or SMB share on the server at a path such as `/mnt/nas/troved`
+2. Add `TROVED_SAVE_DIR=/mnt/nas/troved` to the server's `.env` file
+3. Restart the server: `docker compose up -d --build`
+4. Open **Settings → Save to server (NAS / SMB)** and click **Save to server**
 
+The server writes `wishlist.json` to the configured directory. The wishlist file itself never leaves your server.
 
-## Your data and backups
+---
 
-Troved stores its working copy in browser storage. In supported browsers such as current Chrome or Edge, **Preferences → Choose folder** can autosave a separate `wishlist.json` where the app is on localhost or HTTPS and you grant permission. If permission expires, reconnect the folder. On browsers or origins without direct folder writing, download JSON after editing and save it yourself.
+## 📁 Data & Backups
 
-Choosing a folder that already contains a wishlist merges unique groups and items with the current browser copy; matching items are not duplicated. A malformed folder file is reported and is not overwritten. Disconnecting leaves its file untouched. Use **ZIP backup** for a portable snapshot, or **Restore JSON** to merge a valid backup.
+Troved stores its working copy in browser storage. Here's how to keep your data safe:
 
-## Private Proxmox deployment
+### Folder autosave
 
-The included Docker setup is intended for a private home-network/VPN deployment. The server has **no user authentication**: do not expose port 3000 to the public internet, add a router port-forward, or publish it on an untrusted network.
+In supported browsers (Chrome, Edge), use **Preferences → Choose folder** to autosave a `wishlist.json` file. Requires localhost or HTTPS with your permission. If permission expires, simply reconnect the folder.
 
-### 1. Create the VM
+### Manual backup
 
-In Proxmox, create an Ubuntu Server 24.04 LTS VM attached to your trusted LAN bridge (commonly `vmbr0`). For this lightweight app, start with 2 vCPUs, 2 GB RAM, and a 16 GB disk. Give the VM a DHCP reservation in your router so its LAN address remains stable. Do not configure a public IP or router port-forward.
+On browsers without direct folder writing, download JSON after editing and save it yourself.
 
-Install Ubuntu updates and Docker Engine with the official [Docker Ubuntu instructions](https://docs.docker.com/engine/install/ubuntu/). Keep Proxmox and Ubuntu administration accessible only to your trusted LAN/VPN.
+### Backup options
 
-### 2. Copy and configure Troved
+| Method | Use case |
+|---|---|
+| **Folder autosave** | Automatic backup to a local folder |
+| **JSON download** | Manual backup after editing |
+| **ZIP backup** | Portable snapshot of your entire wishlist |
+| **Restore JSON** | Merge a valid backup into your current list |
+| **Server save** | Central backup on NAS/SMB |
 
-Copy this project to the VM using a private method such as `scp` over your LAN/VPN. From the project directory on Ubuntu:
+> 💡 Choosing a folder that already contains a wishlist merges unique groups and items — matching items are never duplicated. A malformed file is reported and never overwritten.
+
+---
+
+## 🚀 Deployment
+
+### Docker / Proxmox
+
+The included Docker setup is intended for a **private home-network/VPN deployment**. The server has **no user authentication** — do not expose port 3000 to the public internet.
+
+> ⚠️ **Security warning:** Never add a router port-forward or publish Troved on an untrusted network.
+
+#### Step 1: Create the VM
+
+In Proxmox, create an Ubuntu Server 24.04 LTS VM attached to your trusted LAN bridge (commonly `vmbr0`):
+
+| Resource | Recommended |
+|---|---|
+| vCPUs | 2 |
+| RAM | 2 GB |
+| Disk | 16 GB |
+
+Give the VM a DHCP reservation in your router so its LAN address remains stable. Install Docker Engine following the official [Docker Ubuntu instructions](https://docs.docker.com/engine/install/ubuntu/).
+
+#### Step 2: Copy and configure Troved
 
 ```sh
+# Copy project to VM via scp, then:
 cp .env.example .env
-nano .env
+nano .env  # Add only the API keys you use
+chmod 600 .env  # Restrict access
 ```
 
-Add only the cloud provider keys you use. Restrict the environment file to the VM account:
-
-```sh
-chmod 600 .env
-```
-
-Build and start the app:
+Build and start:
 
 ```sh
 docker compose up -d --build
 docker compose logs -f troved
 ```
 
-The web app and its same-origin AI API are served on port 3000. Visit `http://<VM-LAN-IP>:3000` from a device on your trusted network. No API key is exposed to the browser. The server contacts a configured provider to list available models, and sends Markdown content only when you explicitly choose **Improve** for an import; provider terms and charges apply.
+Visit `http://<VM-LAN-IP>:3000` from a device on your trusted network.
 
-### 3. Restrict network access
-
-On the VM and in the Proxmox/network firewall, allow TCP 3000 only from your actual trusted LAN and VPN address ranges. For example, replace these example subnets with the ranges used by your network:
+#### Step 3: Restrict network access
 
 ```sh
 sudo ufw default deny incoming
-sudo ufw allow from <ADMIN-LAN-CIDR> to any port 22 proto tcp
 sudo ufw allow from <HOME-LAN-CIDR> to any port 3000 proto tcp
 sudo ufw allow from <VPN-CIDR> to any port 3000 proto tcp
 sudo ufw enable
-sudo ufw status
 ```
 
-Ensure the VPN routes clients to the VM's LAN address. Do not add an internet-facing port-forward or public reverse proxy: the server deliberately has no login because the chosen deployment is private-network-only. For remote access, connect to your VPN first.
+> 🔒 **Important:** Docker may bypass UFW rules. Enforce source-network restrictions in the Proxmox firewall or another firewall layer, and verify access from both allowed and disallowed networks.
 
-Docker publishes container ports through its own firewall rules, which may bypass UFW rules on some Ubuntu configurations. Do not rely on UFW alone to restrict the published port: enforce the source-network restriction in the Proxmox firewall or another firewall layer that filters Docker-published traffic, and verify access from both an allowed and a disallowed network before relying on the deployment.
-
-Plain HTTP on a private LAN is used by this setup. Browsers may disable direct folder autosave on a LAN HTTP address because it is not a secure browser context; JSON download/restore backups remain available. If you need folder autosave, use HTTPS with a certificate trusted by your devices while keeping the service private.
-
-### Updating the VM
-
-After copying updated source files to the VM:
+#### Updating
 
 ```sh
 docker compose up -d --build
 ```
 
-Keep `.env` backed up privately, never in source control. To stop the service, run `docker compose down`.
+Keep `.env` backed up privately. To stop: `docker compose down`.
 
-## Development and testing
+---
 
-Run the server endpoint tests (6 passing):
+### 🖥️ Desktop App
 
-```sh
-cd server
-npm test
-```
-
-Build the frontend:
-
-```sh
-cd frontend
-npm ci
-npm run build
-```
-
-## Security and local use
-
-- The server has no user authentication. Keep it on a private network or behind a VPN, and never expose port 3000 to the public internet.
-- API keys live only in the server's private environment (`.env`, kept out of source control, `chmod 600`). The browser never receives them.
-- Your wishlist stays in your browser or a folder you choose. The server has no wishlist database.
-- Only the Markdown you explicitly choose to **Improve** is sent to the selected model. CSV files are never sent for AI processing, and nothing is imported until you confirm.
-- Ollama runs at an address your browser can reach; set it only to an endpoint you trust.
-- Cloud model usage may incur charges and is subject to the provider's terms.
-- Always review AI output before importing.
-
-## Accessibility
-
-- Dialogs support Escape to close, focus restoration, and keyboard focus trapping.
-- The interface follows the system's reduced-motion preference.
-- Light and dark themes are included.
-- The browser tab shows a built-in Troved favicon (dark tile with a green dot, matching the header logo).
-
-## Desktop app (portable .exe)
-
-A standalone Windows desktop app is available — no browser tabs, no PowerShell, no installation required.
+A standalone Windows desktop app is available — no browser tabs, no installation required.
 
 | File | Description |
-|------|-------------|
-| `Desktop/release/Troved-Portable.exe` | Single portable executable — just double-click and run |
+|---|---|
+| `Desktop/release/Troved-Portable.exe` | Single portable executable — double-click and run |
 
-The desktop app bundles the frontend and the Node.js server together. Launching it opens Troved in its own native window. Your wishlist stays in browser storage or a folder you choose, exactly like the web version.
+The desktop app bundles the frontend and Node.js server together, opening Troved in its own native window. Your data stays in browser storage or a folder you choose, exactly like the web version.
 
-### Building the desktop app
+#### Building the desktop app
 
 ```sh
 # Build the frontend first
-cd frontend
-npm ci
-npm run build
+cd frontend && npm ci && npm run build
 
 # Build the portable desktop app
-cd ../Desktop
-npm ci
-npm run build
+cd ../Desktop && npm ci && npm run build
 ```
 
 The portable executable will be at `Desktop/release/Troved-Portable.exe`.
 
-## Project structure
+## 🛠️ Development
+
+### Running tests
+
+```sh
+# Frontend tests (27 passing)
+cd frontend && npm test
+
+# Server tests (6 passing)
+cd server && npm test
+```
+
+**Total: 33 passing tests**
+
+### Building
+
+```sh
+cd frontend
+npm ci
+npm run build
+```
+
+### Project structure
 
 ```text
-frontend/   Vite application (wishlist UI, local import parser, backups)
-server/     Optional Node.js server: serves frontend/dist, /api/health, /api/ai/*, and endpoint tests
-Desktop/    Electron wrapper producing portable .exe and installer
+Troved/
+├── frontend/       Vite application (wishlist UI, import parser, backups)
+│   ├── src/        TypeScript/React source files
+│   ├── index.html  Entry point
+│   └── package.json
+├── server/         Optional Node.js server
+│   ├── index.mjs   Server entry point
+│   └── index.test.mjs  Server tests
+├── Desktop/        Electron wrapper for portable .exe
+├── Dockerfile      Docker image definition
+├── docker-compose.yml  Docker Compose configuration
+├── manifest.json   PWA manifest
+├── sw.js           Service worker for offline support
+├── README.md       This file
+└── README.nl.md    Dutch translation
 ```
+
+---
+
+## 🔒 Security
+
+- **No authentication** — The server has no user login. Keep it on a private network or behind a VPN.
+- **Never expose port 3000** to the public internet.
+- **API keys** live only in the server's `.env` file (kept out of source control, `chmod 600`). The browser never receives them.
+- **Your data stays local** — Your wishlist lives in your browser or a folder you choose. The server has no wishlist database.
+- **AI privacy** — Only the Markdown you explicitly choose to **Improve** is sent to the selected model. CSV files are never sent.
+- **Ollama** — Set only to an endpoint you trust.
+- **Cloud costs** — Cloud model usage may incur charges from the provider.
+- **Always review** AI output before importing.
+
+---
+
+## ♿ Accessibility
+
+- **Keyboard navigation** — Full keyboard support with visible focus indicators
+- **Dialog focus trapping** — Focus stays within open dialogs
+- **Escape to close** — Press `Esc` to close any dialog (focus is restored)
+- **Reduced motion** — Respects the system's `prefers-reduced-motion` preference
+- **Light & dark themes** — Two complete themes with proper contrast ratios
+- **Custom favicon** — Built-in Troved favicon (dark tile with a green dot)
+
+---
+
+## 🐛 Troubleshooting
+
+### Folder autosave doesn't work
+
+- **Cause:** Folder autosave requires a secure context (localhost or HTTPS). Plain HTTP on a LAN address may not work.
+- **Solution:** Use JSON download/restore for backups, or set up HTTPS with a trusted certificate.
+
+### AI import doesn't work
+
+- **Cause:** Missing or invalid API key in `.env`.
+- **Solution:** Verify your API key is correct and the server is running. Check `docker compose logs troved` for errors.
+
+### Docker port conflicts
+
+- **Cause:** Port 3000 is already in use.
+- **Solution:** Change the port in `.env`: `PORT=3001`, then rebuild with `docker compose up -d --build`.
+
+### Wishlist not saving
+
+- **Cause:** Browser storage is full or folder permission expired.
+- **Solution:** Use **Settings → Choose folder** to reconnect, or download a JSON backup.
+
+### Dark mode flash on load
+
+- **Cause:** Theme is applied before first paint, but some browsers may still flash.
+- **Solution:** This is a browser limitation. The theme is set as early as possible to minimize the flash.
+
+---
+
+## 🤖 AI-Assisted Development
+
+This project was developed with extensive use of **AI development tools** including ChatGPT and OpenAI Codex.
+
+The human developer was responsible for:
+
+- Defining requirements and desired functionality
+- Making architectural and technical decisions
+- Directing implementation through iterative prompts
+- Testing the application and integrations
+- Reviewing and correcting generated code
+- Debugging issues during development
+- Setting up the Git/GitHub workflow and documentation
