@@ -58,7 +58,7 @@ function createWindow() {
     minWidth: 1000,
     minHeight: 700,
     show: false,
-    title: "Troved — Wishlist",
+    title: "Troved – Wishlist",
     frame: true,
     backgroundColor: "#0d1117",
     webPreferences: {

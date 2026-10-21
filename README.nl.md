@@ -22,7 +22,7 @@
 [![Vite](https://img.shields.io/badge/Vite-6.0+-purple.svg)](https://vitejs.dev/)
 [![Tests](https://img.shields.io/badge/Tests-33%20slagen-brightgreen.svg)]()
 
-Organiseer ideeën in geneste collecties, houd EUR-prijzen bij, importeer Markdown- of CSV-bestanden, en plan je aankopen — allemaal zonder account, clouddatabase of internetverbinding. Je gegevens blijven op je apparaat.
+Organiseer ideeën in geneste collecties, houd EUR-prijzen bij, importeer Markdown- of CSV-bestanden, en plan je aankopen, allemaal zonder account, clouddatabase of internetverbinding. Je gegevens blijven op je apparaat.
 
 > 🇬🇧 Read this in English: [English README](README.md).
 
@@ -60,7 +60,7 @@ Organiseer ideeën in geneste collecties, houd EUR-prijzen bij, importeer Markdo
 
 ## 🎯 Wat is Troved?
 
-Troved is een **wishlist die volledig in je browser draait**. Er is geen account nodig, geen clouddatabase, en geen abonnement. Je wishlist leeft in de opslag van je browser of in een `wishlist.json`-bestand in een map die je kiest — volledig portabel, volledig van jou.
+Troved is een **wishlist die volledig in je browser draait**. Er is geen account nodig, geen clouddatabase, en geen abonnement. Je wishlist leeft in de opslag van je browser of in een `wishlist.json`-bestand in een map die je kiest, volledig portabel, volledig van jou.
 
 Een optionele lichte server voegt AI-geassisteerde Markdown-import toe (via OpenAI, Anthropic, Google Gemini, of lokaal Ollama), maar de kern-app werkt volledig offline zonder backend.
 
@@ -81,70 +81,70 @@ Een optionele lichte server voegt AI-geassisteerde Markdown-import toe (via Open
 
 ### Kern
 
-- **EUR-prijsbijhouding** — Schat prijzen per item met groep- en totaalsamenvattingen, plus optionele dagelijkse referentiekurzen van [Frankfurter](https://www.frankfurter.dev/)
-- **Full-text zoekfunctie** — Zoek door itemnamen, merken, tags, links, notities en aankoopbronnen
-- **Sorteeropties** — Sorteer op recent toegevoegd, datum, naam (A-Z), laagste/hogste prijs, prioriteit, of status
-- **Vergelijking naast elkaar** — Vergelijk geselecteerde items in een gedetailleerde tabelweergave
+- **EUR-prijsbijhouding**: Schat prijzen per item met groep- en totaalsamenvattingen, plus optionele dagelijkse referentiekurzen van [Frankfurter](https://www.frankfurter.dev/)
+- **Full-text zoekfunctie**: Zoek door itemnamen, merken, tags, links, notities en aankoopbronnen
+- **Sorteeropties**: Sorteer op recent toegevoegd, datum, naam (A-Z), laagste/hogste prijs, prioriteit, of status
+- **Vergelijking naast elkaar**: Vergelijk geselecteerde items in een gedetailleerde tabelweergave
 
 ### Organisatie
 
-- **Geneste collecties** — Organiseer items in groepen en subgroepen met onbeperkt nesten
-- **Groep inklappen/uitklappen** — Klap geneste groepen in de zijbalk in en uit om rommel te verminderen
-- **Tags** — Voeg door komma's gescheiden tags toe aan items voor kruisende organisatie
-- **Tagfiltering** — Eén-klik tag-chips die itemaantallen tonen voor directe filtering
-- **Prioriteitsniveaus** — Markeer items als Hoog, Midden of Laag prioriteit
-- **Statusworkflow** — Houd items bij via Gewild → Onderzoek → Gepland → Aangeschaft
-- **Statusfiltering** — Filter op status met dedicated sub-filters
-- **Itemafhankelijkheden** — Markeer items als "geblokkeerd door" een ander item of voorwaarde
-- **Sleepfunctie** — Herschik items, verplaats tussen groepen, en nest groepen via drag-and-drop (werkt op touch-apparaten)
+- **Geneste collecties**: Organiseer items in groepen en subgroepen met onbeperkt nesten
+- **Groep inklappen/uitklappen**: Klap geneste groepen in de zijbalk in en uit om rommel te verminderen
+- **Tags**: Voeg door komma's gescheiden tags toe aan items voor kruisende organisatie
+- **Tagfiltering**: Eén-klik tag-chips die itemaantallen tonen voor directe filtering
+- **Prioriteitsniveaus**: Markeer items als Hoog, Midden of Laag prioriteit
+- **Statusworkflow**: Houd items bij via Gewild → Onderzoek → Gepland → Aangeschaft
+- **Statusfiltering**: Filter op status met dedicated sub-filters
+- **Itemafhankelijkheden**: Markeer items als "geblokkeerd door" een ander item of voorwaarde
+- **Sleepfunctie**: Herschik items, verplaats tussen groepen, en nest groepen via drag-and-drop (werkt op touch-apparaten)
 
 ### Import & Export
 
-- **Markdown-import** — Importeer `.md` en `.markdown`-bestanden met koppen, lijsten en tabellen
-- **CSV-import** — Importeer CSV-bestanden met wishlist-kolommen
-- **AI-geassisteerde import** — Gebruik OpenAI, Anthropic, Google Gemini, of lokaal Ollama om rommelige Markdown te ordenen
-- **CSV-export** — Exporteer je wishlist als CSV-bestand voor spreadsheets
-- **JSON-export/herstel** — Download en herstel je wishlist als JSON
-- **ZIP-backup** — Maak portable ZIP-back-ups van je volledige wishlist
-- **PDF-export** — Exporteer een afdrukbare PDF met de printfunctie van de browser
+- **Markdown-import**: Importeer `.md` en `.markdown`-bestanden met koppen, lijsten en tabellen
+- **CSV-import**: Importeer CSV-bestanden met wishlist-kolommen
+- **AI-geassisteerde import**: Gebruik OpenAI, Anthropic, Google Gemini, of lokaal Ollama om rommelige Markdown te ordenen
+- **CSV-export**: Exporteer je wishlist als CSV-bestand voor spreadsheets
+- **JSON-export/herstel**: Download en herstel je wishlist als JSON
+- **ZIP-backup**: Maak portable ZIP-back-ups van je volledige wishlist
+- **PDF-export**: Exporteer een afdrukbare PDF met de printfunctie van de browser
 
 ### 🤖 AI-assistentie
 
-- **Multi-provider ondersteuning** — Kies uit OpenAI, Anthropic, Google Gemini, of lokaal Ollama
-- **Markdown-organisatie** — AI verfijnt rommelige Markdown tot gestructureerde wishlist-items
-- **Privacy-first** — Alleen de Markdown die je kiest om te verbeteren wordt verzonden; CSV-bestanden worden nooit verzonden
-- **Lokale AI** — Gebruik Ollama voor volledig privé, offline AI-verwerking
+- **Multi-provider ondersteuning**: Kies uit OpenAI, Anthropic, Google Gemini, of lokaal Ollama
+- **Markdown-organisatie**: AI verfijnt rommelige Markdown tot gestructureerde wishlist-items
+- **Privacy-geëerst**: Alleen de Markdown die je kiest om te verbeteren wordt verzonden; CSV-bestanden worden nooit verzonden
+- **Lokale AI**: Gebruik Ollama voor volledig privé, offline AI-verwerking
 
 ### 📊 Plannen & Bijhouden
 
-- **Budgettracking** — Stel een maandbudget in en monitor uitgaven met een visuele voortgangsbalk
-- **Wishlistdoelen** — Stel een doel aantal items in om te kopen met een optionele deadline
-- **Prijsalerts** — Stel een doelprijs in per item; krijg een "🔔 Deal!"-badge wanneer de prijs daalt
-- **Prijs historie** — Houd prijsveranderingen bij over tijd met sparkline-grafieken op itemkaarten
-- **Aankoophistorie** — Registreer wanneer en waar je elk item kocht
-- **Item notitiesjournal** — Voeg gedateerde notities toe aan items over tijd voor onderzoek en beslissingen
-- **Statistieken dashboard** — Bekijk SVG-grafieken met uitgaven per groep en items per status
+- **Budgettracking**: Stel een maandbudget in en monitor uitgaven met een visuele voortgangsbalk
+- **Wishlistdoelen**: Stel een doel aantal items in om te kopen met een optionele deadline
+- **Prijsalerts**: Stel een doelprijs in per item; krijg een "🔔 Deal!"-badge wanneer de prijs daalt
+- **Prijs historie**: Houd prijsveranderingen bij over tijd met sparkline-grafieken op itemkaarten
+- **Aankoophistorie**: Registreer wanneer en waar je elk item kocht
+- **Item notitiesjournal**: Voeg gedateerde notities toe aan items over tijd voor onderzoek en beslissingen
+- **Statistieken dashboard**: Bekijk SVG-grafieken met uitgaven per groep en items per status
 
 ### 🎨 Interface
 
-- **Licht & donker thema** — Toegepast vóór eerste paint; geen flits voor donker-gebruikers
-- **Donkere modus-schema** — Schakel automatisch thema's op basis van tijd van dag of systeemvoorkeur
-- **Itemafbeeldingen** — Voeg productafbeeldings-URL's toe weergegeven als miniaturen op itemkaarten
-- **Winkelwagenmodus** — Compacte controlelijstweergave van gekochte items, geoptimaliseerd voor gebruik in de winkel
-- **Wishlist delen** — Genereer een deelbare link of download JSON voor cadeaugidsen
-- **PWA-ondersteuning** — Installeer als standalone-app met offline-toegang
-- **Toetsenbordnavigatie** — Volledige toetsenbordondersteuning met focusval in dialogen
-- **Gebundelde lettertypen** — DM Sans en Manrope via Fontsource; geen externe CDN-aanroepen
-- **Bulkacties** — Selecteer meerdere items om status te wijzigen, te verplaatsen, of te verwijderen
-- **Itemduplicatie** — Dupliceer elk item met één klik vanuit het itemmenu
+- **Licht & donker thema**: Toegepast vóór eerste paint; geen flits voor donker-gebruikers
+- **Donkere modus-schema**: Schakel automatisch thema's op basis van tijd van dag of systeemvoorkeur
+- **Itemafbeeldingen**: Voeg productafbeeldings-URL's toe weergegeven als miniaturen op itemkaarten
+- **Winkelwagenmodus**: Compacte controlelijstweergave van gekochte items, geoptimaliseerd voor gebruik in de winkel
+- **Wishlist delen**: Genereer een deelbare link of download JSON voor cadeaugidsen
+- **PWA-ondersteuning**: Installeer als standalone-app met offline-toegang
+- **Toetsenbordnavigatie**: Volledige toetsenbordondersteuning met focusval in dialogen
+- **Gebundelde lettertypen**: DM Sans en Manrope via Fontsource; geen externe CDN-aanroepen
+- **Bulkacties**: Selecteer meerdere items om status te wijzigen, te verplaatsen, of te verwijderen
+- **Itemduplicatie**: Dupliceer elk item met één klik vanuit het itemmenu
 
 ### 🔒 Gegevens & Privacy
 
-- **Lokaal-eerst** — Je gegevens verlaten je apparaat nooit tenzij je dat kiest
-- **Map autosave** — Automatisch opslaan naar `wishlist.json` in een map die je kiest
-- **Geen account nodig** — Geen registratie, geen clouddatabase, geen tracking
-- **Server-side opslag** — Optionele NAS/SMB-opslag voor centrale back-up
-- **Verminderde beweging ondersteuning** — Eerbiedigt systeemtoegankelijkheidsvoorkeuren
+- **Lokaal-eerst**: Je gegevens verlaten je apparaat nooit tenzij je dat kiest
+- **Map autosave**: Automatisch opslaan naar `wishlist.json` in een map die je kiest
+- **Geen account nodig**: Geen registratie, geen clouddatabase, geen tracking
+- **Server-side opslag**: Optionele NAS/SMB-opslag voor centrale back-up
+- **Verminderde beweging ondersteuning**: Eerbiedigt systeemtoegankelijkheidsvoorkeuren
 
 ---
 
@@ -160,7 +160,7 @@ npm ci
 npm run dev
 ```
 
-Open de lokale URL die door Vite wordt afgedrukt (meestal `http://127.0.0.1:5173`). Klaar — Troved werkt zonder backend.
+Open de lokale URL die door Vite wordt afgedrukt (meestal `http://127.0.0.1:5173`). Klaar, Troved werkt zonder backend.
 
 **Wil je AI-geassisteerde import?** Start de optionele server in een tweede terminal:
 
@@ -295,10 +295,10 @@ chmod 600 .env  # Beperk toegang
 | --- | --- | --- |
 | `PORT` | `3000` | Serverpoort |
 | `HOST` | `0.0.0.0` | Server-bindadres |
-| `OPENAI_API_KEY` | — | Schakelt OpenAI-modellen in voor import-assistentie |
-| `ANTHROPIC_API_KEY` | — | Schakelt Anthropic-modellen in voor import-assistentie |
-| `GEMINI_API_KEY` | — | Schakelt Google Gemini-modellen in voor import-assistentie |
-| `TROVED_SAVE_DIR` | — | Server-side wishlist opslagdirectory (bijv. gemount NAS/SMB) |
+| `OPENAI_API_KEY` | Geen | Schakelt OpenAI-modellen in voor import-assistentie |
+| `ANTHROPIC_API_KEY` | Geen | Schakelt Anthropic-modellen in voor import-assistentie |
+| `GEMINI_API_KEY` | Geen | Schakelt Google Gemini-modellen in voor import-assistentie |
+| `TROVED_SAVE_DIR` | Geen | Server-side wishlist opslagdirectory (bijv. gemount NAS/SMB) |
 
 ### AI instellen in de app
 
@@ -349,7 +349,7 @@ Op browsers zonder directe mapschrijving, download JSON na bewerken en sla het z
 | **JSON herstellen** | Een geldige back-up samenvoegen met je huidige lijst |
 | **Server-opslag** | Centrale back-up op NAS/SMB |
 
-> 💡 Het kiezen van een map die al een wishlist bevat, voegt unieke groepen en items samen — overeenkomende items worden nooit gedupliceerd. Een beschadigd bestand wordt gemeld en nooit overschreven.
+> 💡 Het kiezen van een map die al een wishlist bevat, voegt unieke groepen en items samen, overeenkomende items worden nooit gedupliceerd. Een beschadigd bestand wordt gemeld en nooit overschreven.
 
 ---
 
@@ -357,7 +357,7 @@ Op browsers zonder directe mapschrijving, download JSON na bewerken en sla het z
 
 ### Docker / Proxmox
 
-De inbegrepen Docker-setup is bedoeld voor een **privé thuisnetwerk/VPN-implementatie**. De server heeft **geen gebruikersauthenticatie** — stel poort 3000 niet bloot aan het openbare internet.
+De inbegrepen Docker-setup is bedoeld voor een **privé thuisnetwerk/VPN-implementatie**. De server heeft **geen gebruikersauthenticatie**, stel poort 3000 niet bloot aan het openbare internet.
 
 > ⚠️ **Beveiligingswaarschuwing:** Voeg nooit een router port-forward toe of publiceer Troved op een onbetrouwbaar netwerk.
 
@@ -414,11 +414,11 @@ Houd `.env` privé gebackupt. Om te stoppen: `docker compose down`.
 
 ### 🖥️ Desktop-app
 
-Een standalone Windows desktop-app is beschikbaar — geen browsertabbladen, geen installatie vereist.
+Een standalone Windows desktop-app is beschikbaar, geen browsertabbladen, geen installatie vereist.
 
 | Bestand | Beschrijving |
 |---|---|
-| `Desktop/release/Troved-Portable.exe` | Enkel portable executable — dubbelklik en run |
+| `Desktop/release/Troved-Portable.exe` | Enkel portable executable, dubbelklik en run |
 
 De desktop-app bundelt de frontend en Node.js server samen, en opent Troved in zijn eigen native venster. Je gegevens blijven in browseropslag of een map die je kiest, net als de webversie.
 
@@ -482,25 +482,25 @@ Troved/
 
 ## 🔒 Beveiliging
 
-- **Geen authenticatie** — De server heeft geen gebruikerslogin. Houd het op een privé-netwerk of achter een VPN.
+- **Geen authenticatie**: De server heeft geen gebruikerslogin. Houd het op een privé-netwerk of achter een VPN.
 - **Nooit poort 3000 blootstellen** aan het openbare internet.
 - **API-sleutels** leven alleen in de `.env`-bestand van de server (buiten broncontrole gehouden, `chmod 600`). De browser ontvangt ze nooit.
-- **Je gegevens blijven lokaal** — Je wishlist leeft in je browser of een map die je kiest. De server heeft geen wishlist-database.
-- **AI-privacy** — Alleen de Markdown die je expliciet kiest om te **Verbeteren** wordt naar het geselecteerde model gestuurd. CSV-bestanden worden nooit verzonden.
-- **Ollama** — Stel alleen in op een endpoint dat je vertrouwt.
-- **Cloud-kosten** — Cloudmodelgebruik kan kosten met zich meebrengen bij de provider.
+- **Je gegevens blijven lokaal**: Je wishlist leeft in je browser of een map die je kiest. De server heeft geen wishlist-database.
+- **AI-privacy**: Alleen de Markdown die je expliciet kiest om te **Verbeteren** wordt naar het geselecteerde model gestuurd. CSV-bestanden worden nooit verzonden.
+- **Ollama**: Stel alleen in op een endpoint dat je vertrouwt.
+- **Cloud-kosten**: Cloudmodelgebruik kan kosten met zich meebrengen bij de provider.
 - **Altijd controleren** AI-output vóór importeren.
 
 ---
 
 ## ♿ Toegankelijkheid
 
-- **Toetsenbordnavigatie** — Volledige toetsenbordondersteuning met zichtbare focus-indicatoren
-- **Dialoogfocusval** — Focus blijft binnen geopende dialogen
-- **Escape om te sluiten** — Druk `Esc` om een willekeurige dialoog te sluiten (focus wordt hersteld)
-- **Verminderde beweging** — Eerbiedigt de systeemvoorkeur `prefers-reduced-motion`
-- **Licht & donker thema's** — Twee complete thema's met goede contrastverhoudingen
-- **Aangepast favicon** — Ingebouwd Troved-favicon (donkere tegel met een groene punt)
+- **Toetsenbordnavigatie**: Volledige toetsenbordondersteuning met zichtbare focus-indicatoren
+- **Dialoogfocusval**: Focus blijft binnen geopende dialogen
+- **Escape om te sluiten**: Druk `Esc` om een willekeurige dialoog te sluiten (focus wordt hersteld)
+- **Verminderde beweging**: Eerbiedigt de systeemvoorkeur `prefers-reduced-motion`
+- **Licht & donker thema's**: Twee complete thema's met goede contrastverhoudingen
+- **Aangepast favicon**: Ingebouwd Troved-favicon (donkere tegel met een groene punt)
 
 ---
 

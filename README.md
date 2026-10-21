@@ -22,7 +22,7 @@
 [![Vite](https://img.shields.io/badge/Vite-6.0+-purple.svg)](https://vitejs.dev/)
 [![Tests](https://img.shields.io/badge/Tests-33%20passing-brightgreen.svg)]()
 
-Organize ideas into nested collections, track prices in EUR, import Markdown or CSV files, and plan your purchases — all without an account, cloud database, or internet connection. Your data stays on your device.
+Organize ideas into nested collections, track prices in EUR, import Markdown or CSV files, and plan your purchases, all without an account, cloud database, or internet connection. Your data stays on your device.
 
 > 🇳🇱 Lees dit in het Nederlands: [Nederlandstalige README](README.nl.md).
 
@@ -60,7 +60,7 @@ Organize ideas into nested collections, track prices in EUR, import Markdown or 
 
 ## 🎯 What is Troved?
 
-Troved is a **wishlist that runs entirely in your browser**. There's no account to create, no cloud database, and no subscription. Your wishlist lives in your browser's storage or in a `wishlist.json` file in a folder you choose — fully portable, fully yours.
+Troved is a **wishlist that runs entirely in your browser**. There's no account to create, no cloud database, and no subscription. Your wishlist lives in your browser's storage or in a `wishlist.json` file in a folder you choose, fully portable, fully yours.
 
 An optional lightweight server adds AI-assisted Markdown import (via OpenAI, Anthropic, Google Gemini, or local Ollama), but the core app works completely offline without any backend.
 
@@ -79,70 +79,70 @@ An optional lightweight server adds AI-assisted Markdown import (via OpenAI, Ant
 
 ### Core
 
-- **EUR price tracking** — Estimate prices per item with group and total summaries, plus optional daily reference rates from [Frankfurter](https://www.frankfurter.dev/)
-- **Full-text search** — Search across item names, brands, tags, links, notes, and purchase sources
-- **Sort options** — Sort by recently added, date added, name (A-Z), lowest/highest price, priority, or status
-- **Side-by-side comparison** — Compare selected items in a detailed table view
+- **EUR price tracking**: Estimate prices per item with group and total summaries, plus optional daily reference rates from [Frankfurter](https://www.frankfurter.dev/)
+- **Full-text search**: Search across item names, brands, tags, links, notes, and purchase sources
+- **Sort options**: Sort by recently added, date added, name (A-Z), lowest/highest price, priority, or status
+- **Side-by-side comparison**: Compare selected items in a detailed table view
 
 ### Organization
 
-- **Nested collections** — Organize items into groups and subgroups with unlimited nesting
-- **Group collapse/expand** — Collapse nested groups in the sidebar to reduce clutter
-- **Tags** — Add comma-separated tags to items for cross-cutting organization
-- **Tag filtering** — One-click tag chips showing item counts for instant filtering
-- **Priority levels** — Mark items as High, Medium, or Low priority
-- **Status workflow** — Track items through Wanted → Researching → Planned → Purchased
-- **Status filtering** — Filter by status with dedicated sub-filters
-- **Item dependencies** — Mark items as "blocked by" another item or condition
-- **Drag & drop** — Reorder items, move between groups, and nest groups via drag-and-drop (works on touch devices)
+- **Nested collections**: Organize items into groups and subgroups with unlimited nesting
+- **Group collapse/expand**: Collapse nested groups in the sidebar to reduce clutter
+- **Tags**: Add comma-separated tags to items for cross-cutting organization
+- **Tag filtering**: One-click tag chips showing item counts for instant filtering
+- **Priority levels**: Mark items as High, Medium, or Low priority
+- **Status workflow**: Track items through Wanted → Researching → Planned → Purchased
+- **Status filtering**: Filter by status with dedicated sub-filters
+- **Item dependencies**: Mark items as "blocked by" another item or condition
+- **Drag & drop**: Reorder items, move between groups, and nest groups via drag-and-drop (works on touch devices)
 
 ### Import & Export
 
-- **Markdown import** — Import `.md` and `.markdown` files with headings, lists, and tables
-- **CSV import** — Import CSV files with wishlist columns
-- **AI-assisted import** — Use OpenAI, Anthropic, Google Gemini, or local Ollama to organize messy Markdown
-- **CSV export** — Export your wishlist as a CSV file for spreadsheets
-- **JSON export/restore** — Download and restore your wishlist as JSON
-- **ZIP backup** — Create portable ZIP backups of your entire wishlist
-- **PDF export** — Export a printable PDF using the browser's print function
+- **Markdown import**: Import `.md` and `.markdown` files with headings, lists, and tables
+- **CSV import**: Import CSV files with wishlist columns
+- **AI-assisted import**: Use OpenAI, Anthropic, Google Gemini, or local Ollama to organize messy Markdown
+- **CSV export**: Export your wishlist as a CSV file for spreadsheets
+- **JSON export/restore**: Download and restore your wishlist as JSON
+- **ZIP backup**: Create portable ZIP backups of your entire wishlist
+- **PDF export**: Export a printable PDF using the browser's print function
 
 ### 🤖 AI Assistance
 
-- **Multi-provider support** — Choose from OpenAI, Anthropic, Google Gemini, or local Ollama
-- **Markdown organization** — AI refines messy Markdown into structured wishlist items
-- **Privacy-first** — Only the Markdown you choose to improve is sent; CSV files are never sent
-- **Local AI** — Use Ollama for completely private, offline AI processing
+- **Multi-provider support**: Choose from OpenAI, Anthropic, Google Gemini, or local Ollama
+- **Markdown organization**: AI refines messy Markdown into structured wishlist items
+- **Privacy-first**: Only the Markdown you choose to improve is sent; CSV files are never sent
+- **Local AI**: Use Ollama for completely private, offline AI processing
 
 ### 📊 Planning & Tracking
 
-- **Budget tracking** — Set a monthly budget and monitor spending with a visual progress bar
-- **Wishlist goals** — Set a target number of items to purchase with an optional deadline
-- **Price alerts** — Set a target price per item; get a "🔔 Deal!" badge when the price drops
-- **Price history** — Track price changes over time with sparkline charts on item cards
-- **Purchase history** — Record when and where you bought each item
-- **Item notes journal** — Append dated notes to items over time for research and decisions
-- **Statistics dashboard** — View SVG charts showing spending by group and items by status
+- **Budget tracking**: Set a monthly budget and monitor spending with a visual progress bar
+- **Wishlist goals**: Set a target number of items to purchase with an optional deadline
+- **Price alerts**: Set a target price per item; get a "🔔 Deal!" badge when the price drops
+- **Price history**: Track price changes over time with sparkline charts on item cards
+- **Purchase history**: Record when and where you bought each item
+- **Item notes journal**: Append dated notes to items over time for research and decisions
+- **Statistics dashboard**: View SVG charts showing spending by group and items by status
 
 ### 🎨 Interface
 
-- **Light & dark themes** — Applied before first paint; no flash for dark-mode users
-- **Dark mode schedule** — Auto-switch themes based on time of day or system preference
-- **Item images** — Attach product image URLs displayed as thumbnails on item cards
-- **Shopping list mode** — Compact checklist view of purchased items, optimized for in-store use
-- **Wishlist sharing** — Generate a shareable link or download JSON for gift guides
-- **PWA support** — Install as a standalone app with offline access
-- **Keyboard navigation** — Full keyboard support with focus trapping in dialogs
-- **Bundled fonts** — DM Sans and Manrope via Fontsource; no external CDN calls
-- **Bulk actions** — Multi-select items to change status, move, or remove in one step
-- **Item duplication** — One-click duplicate any item from the item menu
+- **Light & dark themes**: Applied before first paint; no flash for dark-mode users
+- **Dark mode schedule**: Auto-switch themes based on time of day or system preference
+- **Item images**: Attach product image URLs displayed as thumbnails on item cards
+- **Shopping list mode**: Compact checklist view of purchased items, optimized for in-store use
+- **Wishlist sharing**: Generate a shareable link or download JSON for gift guides
+- **PWA support**: Install as a standalone app with offline access
+- **Keyboard navigation**: Full keyboard support with focus trapping in dialogs
+- **Bundled fonts**: DM Sans and Manrope via Fontsource; no external CDN calls
+- **Bulk actions**: Multi-select items to change status, move, or remove in one step
+- **Item duplication**: One-click duplicate any item from the item menu
 
 ### 🔒 Data & Privacy
 
-- **Local-first** — Your data never leaves your device unless you choose to
-- **Folder autosave** — Autosave to `wishlist.json` in a folder you choose
-- **No account required** — No sign-up, no cloud database, no tracking
-- **Server-side saving** — Optional NAS/SMB save for central backup
-- **Reduced motion support** — Respects system accessibility preferences
+- **Local-first**: Your data never leaves your device unless you choose to
+- **Folder autosave**: Autosave to `wishlist.json` in a folder you choose
+- **No account required**: No sign-up, no cloud database, no tracking
+- **Server-side saving**: Optional NAS/SMB save for central backup
+- **Reduced motion support**: Respects system accessibility preferences
 
 ---
 
@@ -158,7 +158,7 @@ npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite (usually `http://127.0.0.1:5173`). That's it — Troved works without any backend.
+Open the local URL printed by Vite (usually `http://127.0.0.1:5173`). That's it, Troved works without any backend.
 
 **Want AI-assisted import?** Start the optional server in a second terminal:
 
@@ -293,10 +293,10 @@ chmod 600 .env  # Restrict access
 | --- | --- | --- |
 | `PORT` | `3000` | Server port |
 | `HOST` | `0.0.0.0` | Server bind address |
-| `OPENAI_API_KEY` | — | Enables OpenAI models for import assistance |
-| `ANTHROPIC_API_KEY` | — | Enables Anthropic models for import assistance |
-| `GEMINI_API_KEY` | — | Enables Google Gemini models for import assistance |
-| `TROVED_SAVE_DIR` | — | Server-side wishlist saving directory (e.g., mounted NAS/SMB) |
+| `OPENAI_API_KEY` | None | Enables OpenAI models for import assistance |
+| `ANTHROPIC_API_KEY` | None | Enables Anthropic models for import assistance |
+| `GEMINI_API_KEY` | None | Enables Google Gemini models for import assistance |
+| `TROVED_SAVE_DIR` | None | Server-side wishlist saving directory (e.g., mounted NAS/SMB) |
 
 ### Setting up AI in the app
 
@@ -347,7 +347,7 @@ On browsers without direct folder writing, download JSON after editing and save 
 | **Restore JSON** | Merge a valid backup into your current list |
 | **Server save** | Central backup on NAS/SMB |
 
-> 💡 Choosing a folder that already contains a wishlist merges unique groups and items — matching items are never duplicated. A malformed file is reported and never overwritten.
+> 💡 Choosing a folder that already contains a wishlist merges unique groups and items, matching items are never duplicated. A malformed file is reported and never overwritten.
 
 ---
 
@@ -355,7 +355,7 @@ On browsers without direct folder writing, download JSON after editing and save 
 
 ### Docker / Proxmox
 
-The included Docker setup is intended for a **private home-network/VPN deployment**. The server has **no user authentication** — do not expose port 3000 to the public internet.
+The included Docker setup is intended for a **private home-network/VPN deployment**. The server has **no user authentication**, do not expose port 3000 to the public internet.
 
 > ⚠️ **Security warning:** Never add a router port-forward or publish Troved on an untrusted network.
 
@@ -412,11 +412,11 @@ Keep `.env` backed up privately. To stop: `docker compose down`.
 
 ### 🖥️ Desktop App
 
-A standalone Windows desktop app is available — no browser tabs, no installation required.
+A standalone Windows desktop app is available, no browser tabs, no installation required.
 
 | File | Description |
 |---|---|
-| `Desktop/release/Troved-Portable.exe` | Single portable executable — double-click and run |
+| `Desktop/release/Troved-Portable.exe` | Single portable executable, double-click and run |
 
 The desktop app bundles the frontend and Node.js server together, opening Troved in its own native window. Your data stays in browser storage or a folder you choose, exactly like the web version.
 
@@ -478,25 +478,25 @@ Troved/
 
 ## 🔒 Security
 
-- **No authentication** — The server has no user login. Keep it on a private network or behind a VPN.
+- **No authentication**: The server has no user login. Keep it on a private network or behind a VPN.
 - **Never expose port 3000** to the public internet.
 - **API keys** live only in the server's `.env` file (kept out of source control, `chmod 600`). The browser never receives them.
-- **Your data stays local** — Your wishlist lives in your browser or a folder you choose. The server has no wishlist database.
-- **AI privacy** — Only the Markdown you explicitly choose to **Improve** is sent to the selected model. CSV files are never sent.
-- **Ollama** — Set only to an endpoint you trust.
-- **Cloud costs** — Cloud model usage may incur charges from the provider.
+- **Your data stays local**: Your wishlist lives in your browser or a folder you choose. The server has no wishlist database.
+- **AI privacy**: Only the Markdown you explicitly choose to **Improve** is sent to the selected model. CSV files are never sent.
+- **Ollama**: Set only to an endpoint you trust.
+- **Cloud costs**: Cloud model usage may incur charges from the provider.
 - **Always review** AI output before importing.
 
 ---
 
 ## ♿ Accessibility
 
-- **Keyboard navigation** — Full keyboard support with visible focus indicators
-- **Dialog focus trapping** — Focus stays within open dialogs
-- **Escape to close** — Press `Esc` to close any dialog (focus is restored)
-- **Reduced motion** — Respects the system's `prefers-reduced-motion` preference
-- **Light & dark themes** — Two complete themes with proper contrast ratios
-- **Custom favicon** — Built-in Troved favicon (dark tile with a green dot)
+- **Keyboard navigation**: Full keyboard support with visible focus indicators
+- **Dialog focus trapping**: Focus stays within open dialogs
+- **Escape to close**: Press `Esc` to close any dialog (focus is restored)
+- **Reduced motion**: Respects the system's `prefers-reduced-motion` preference
+- **Light & dark themes**: Two complete themes with proper contrast ratios
+- **Custom favicon**: Built-in Troved favicon (dark tile with a green dot)
 
 ---
 

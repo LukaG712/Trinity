@@ -1023,7 +1023,7 @@ function App() {
     const sourceId = e.dataTransfer.getData("text/plain");
     const groupData = e.dataTransfer.getData("application/x-troved-group");
     if (groupData) {
-      // A group was dropped on an item — move the item to that group
+      // A group was dropped on an item; move the item to that group
       handleGroupItemDrop(groupData, targetItemId);
       return;
     }
@@ -1549,7 +1549,7 @@ function App() {
             if (groupData) {
               handleGroupDrop(e, group.id);
             } else {
-              // An item was dropped on a group — move the item to this group
+              // An item was dropped on a group; move the item to this group
               e.preventDefault();
               handleGroupItemDrop(group.id, "");
             }
@@ -1815,16 +1815,16 @@ function App() {
               <tr><th>Detail</th>{comparisonItems.map((item) => <th key={item.id} className="comparison-item-header"><strong>{item.name}</strong></th>)}</tr>
             </thead>
             <tbody>
-              <tr><td>Group</td>{comparisonItems.map((item) => { const g = wishlist.groups.find((gr) => gr.id === item.groupId); return <td key={item.id}>{g?.name || "—"}</td>; })}</tr>
-              <tr><td>Subgroup</td>{comparisonItems.map((item) => <td key={item.id}>{item.subgroup || "—"}</td>)}</tr>
-              <tr><td>Brand / Model</td>{comparisonItems.map((item) => <td key={item.id}>{item.brandModel || "—"}</td>)}</tr>
-              <tr><td>Quantity</td>{comparisonItems.map((item) => <td key={item.id}>{item.quantity || 1}</td>)}</tr>
-              <tr><td>Price (EUR)</td>{comparisonItems.map((item) => <td key={item.id}>{item.priceEur != null ? `${item.priceEur.toFixed(2)} €` : "Not priced"}</td>)}</tr>
-              <tr><td>Status</td>{comparisonItems.map((item) => <td key={item.id}>{item.status || "Wanted"}</td>)}</tr>
-              <tr><td>Priority</td>{comparisonItems.map((item) => <td key={item.id}>{item.priority || "—"}</td>)}</tr>
-              <tr><td>Tags</td>{comparisonItems.map((item) => <td key={item.id}>{item.tags?.length ? item.tags.join(", ") : "—"}</td>)}</tr>
-              <tr><td>Notes</td>{comparisonItems.map((item) => <td key={item.id} className="comparison-notes">{item.notes || "—"}</td>)}</tr>
-              <tr><td>Link</td>{comparisonItems.map((item) => <td key={item.id}>{item.link ? <a href={item.link} target="_blank" rel="noreferrer">Visit link</a> : "—"}</td>)}</tr>
+              <tr><td>Group</td>{comparisonItems.map((item) => { const g = wishlist.groups.find((gr) => gr.id === item.groupId); return <td key={item.id}>{g?.name || "N/A"}</td>; })}</tr>
+                <tr><td>Subgroup</td>{comparisonItems.map((item) => <td key={item.id}>{item.subgroup || "N/A"}</td>)}</tr>
+                <tr><td>Brand / Model</td>{comparisonItems.map((item) => <td key={item.id}>{item.brandModel || "N/A"}</td>)}</tr>
+                <tr><td>Quantity</td>{comparisonItems.map((item) => <td key={item.id}>{item.quantity || 1}</td>)}</tr>
+                <tr><td>Price (EUR)</td>{comparisonItems.map((item) => <td key={item.id}>{item.priceEur != null ? `${item.priceEur.toFixed(2)} €` : "Not priced"}</td>)}</tr>
+                <tr><td>Status</td>{comparisonItems.map((item) => <td key={item.id}>{item.status || "Wanted"}</td>)}</tr>
+                <tr><td>Priority</td>{comparisonItems.map((item) => <td key={item.id}>{item.priority || "N/A"}</td>)}</tr>
+                <tr><td>Tags</td>{comparisonItems.map((item) => <td key={item.id}>{item.tags?.length ? item.tags.join(", ") : "N/A"}</td>)}</tr>
+                <tr><td>Notes</td>{comparisonItems.map((item) => <td key={item.id} className="comparison-notes">{item.notes || "N/A"}</td>)}</tr>
+                <tr><td>Link</td>{comparisonItems.map((item) => <td key={item.id}>{item.link ? <a href={item.link} target="_blank" rel="noreferrer">Visit link</a> : "N/A"}</td>)}</tr>
             </tbody>
           </table>
         </div>
