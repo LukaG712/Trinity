@@ -81,6 +81,7 @@ An optional lightweight server adds AI-assisted Markdown import (via OpenAI, Ant
 
 - **EUR price tracking**: Estimate prices per item with group and total summaries, plus optional daily reference rates from [Frankfurter](https://www.frankfurter.dev/)
 - **Full-text search**: Search across item names, brands, tags, links, notes, and purchase sources
+- **Fuzzy search**: Find items even with typos; results ranked by match quality
 - **Sort options**: Sort by recently added, date added, name (A-Z), lowest/highest price, priority, or status
 - **Side-by-side comparison**: Compare selected items in a detailed table view
 
@@ -102,6 +103,7 @@ An optional lightweight server adds AI-assisted Markdown import (via OpenAI, Ant
 - **CSV import**: Import CSV files with wishlist columns
 - **AI-assisted import**: Use OpenAI, Anthropic, Google Gemini, or local Ollama to organize messy Markdown
 - **CSV export**: Export your wishlist as a CSV file for spreadsheets
+- **Markdown export**: Export your wishlist as a formatted Markdown file
 - **JSON export/restore**: Download and restore your wishlist as JSON
 - **ZIP backup**: Create portable ZIP backups of your entire wishlist
 - **PDF export**: Export a printable PDF using the browser's print function
@@ -119,6 +121,7 @@ An optional lightweight server adds AI-assisted Markdown import (via OpenAI, Ant
 - **Wishlist goals**: Set a target number of items to purchase with an optional deadline
 - **Price alerts**: Set a target price per item; get a "🔔 Deal!" badge when the price drops
 - **Price history**: Track price changes over time with sparkline charts on item cards
+- **Price timeline view**: Click any sparkline to see a detailed price history chart with statistics
 - **Purchase history**: Record when and where you bought each item
 - **Item notes journal**: Append dated notes to items over time for research and decisions
 - **Statistics dashboard**: View SVG charts showing spending by group and items by status
@@ -135,6 +138,8 @@ An optional lightweight server adds AI-assisted Markdown import (via OpenAI, Ant
 - **Bundled fonts**: DM Sans and Manrope via Fontsource; no external CDN calls
 - **Bulk actions**: Multi-select items to change status, move, or remove in one step
 - **Item duplication**: One-click duplicate any item from the item menu
+- **Item favorites**: Star items for quick access with a dedicated favorites filter
+- **Group color coding**: Assign colors to groups for visual distinction in the sidebar
 
 ### 🔒 Data & Privacy
 

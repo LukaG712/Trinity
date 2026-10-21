@@ -164,23 +164,33 @@ export function GroupDialog({ group, groups, initialParent, onClose, onSave }: {
   groups: WishlistGroup[];
   initialParent?: string;
   onClose: () => void;
-  onSave: (name: string, parentId?: string) => void;
+  onSave: (name: string, parentId?: string, color?: string) => void;
 }) {
   const [name, setName] = useState(group?.name || "");
   const [parentId, setParentId] = useState(group?.parentId || initialParent || "");
+  const [color, setColor] = useState(group?.color || "");
   const [error, setError] = useState("");
   const blocked = group ? subtreeIds(groups, group.id) : new Set<string>();
   const availableParents = groups.filter((entry) => !blocked.has(entry.id));
+  const groupColors = ["#1a7f37", "#0969da", "#8b3dff", "#bf4800", "#9a6700", "#a40e26", "#59636e", "#1b6ca0", "#6e4b92", "#0f7b6c"];
   return (
     <DialogFrame className="group-dialog" labelledBy="group-dialog-title" onClose={onClose}>
       <ModalHeading eyebrow="ORGANIZE YOUR IDEAS" title={group ? "Edit group" : "Create a group"} id="group-dialog-title" onClose={onClose} />
       <form onSubmit={(event) => {
         event.preventDefault();
         if (!name.trim()) { setError("Give this group a name."); return; }
-        onSave(name.trim(), parentId || undefined);
+        onSave(name.trim(), parentId || undefined, color || undefined);
       }}>
         <label className="field"><span>Group name</span><input autoFocus required maxLength={80} value={name} onChange={(event) => { setName(event.target.value); setError(""); }} placeholder="e.g. Little upgrades" /></label>
         <label className="field"><span>Nested inside</span><select value={parentId} onChange={(event) => setParentId(event.target.value)}><option value="">Top level</option>{availableParents.map((parent) => <option key={parent.id} value={parent.id}>{parent.name}</option>)}</select></label>
+        <label className="field"><span>Color <i>Optional</i></span>
+          <div className="group-color-picker">
+            {groupColors.map((c) => (
+              <button key={c} type="button" className={`group-color-option ${color === c ? "selected" : ""}`} style={{ background: c }} onClick={() => setColor(color === c ? "" : c)} aria-label={`Select ${c} color`} />
+            ))}
+            {color && <button type="button" className="group-color-option" style={{ background: "transparent", border: "2px solid var(--line)" }} onClick={() => setColor("")} aria-label="Remove color"><X size={12} /></button>}
+          </div>
+        </label>
         <p className="group-hint"><FolderTree size={15} /> Nest ideas into the shape that makes sense to you. Groups can have subgroups at any depth.</p>
         {error && <p className="form-error" role="alert">{error}</p>}
         <div className="modal-actions"><button type="button" className="text-button" onClick={onClose}>Cancel</button><button className="primary-btn" type="submit"><Check size={16} /> {group ? "Save changes" : "Create group"}</button></div>

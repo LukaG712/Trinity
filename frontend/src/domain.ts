@@ -1,4 +1,4 @@
-export type WishlistGroup = { id: string; name: string; parentId?: string };
+export type WishlistGroup = { id: string; name: string; parentId?: string; color?: string };
 export type PriceHistoryEntry = { price: number; date: number };
 export type NoteEntry = { text: string; date: number };
 export type WishlistItem = {
@@ -24,6 +24,7 @@ export type WishlistItem = {
   purchasedFrom?: string;
   priceHistory?: PriceHistoryEntry[];
   notesJournal?: NoteEntry[];
+  favorited?: boolean;
 };
 export type Wishlist = { version: number; groups: WishlistGroup[]; items: WishlistItem[] };
 export type Rate = { rate: number; date: string };
@@ -44,7 +45,8 @@ export function validateWishlist(value: unknown): Wishlist {
       throw new Error(`Group ${index + 1} is missing a valid name or ID.`);
     }
     if (group.parentId != null && typeof group.parentId !== "string") throw new Error(`Group "${group.name}" has an invalid parent.`);
-    return { id: group.id, name: group.name.trim(), ...(group.parentId ? { parentId: group.parentId } : {}) };
+    const color = group.color?.trim() ? group.color.trim() : undefined;
+    return { id: group.id, name: group.name.trim(), ...(group.parentId ? { parentId: group.parentId } : {}), ...(color ? { color } : {}) };
   });
   const groupIds = new Set<string>();
   for (const group of groups) {
@@ -99,6 +101,7 @@ export function validateWishlist(value: unknown): Wishlist {
       purchasedFrom,
       priceHistory,
       notesJournal,
+      favorited: item.favorited === true,
     };
   });
   const itemIds = new Set<string>();
@@ -206,4 +209,54 @@ export function readStoredJson<T>(key: string, fallback: T): T {
   } catch {
     return fallback;
   }
+}
+
+// Fuzzy search: returns a score (0 = no match, higher = better match)
+export function fuzzyMatch(query: string, text: string): number {
+  if (!query) return text.length > 0 ? 1 : 0;
+  const q = query.toLowerCase();
+  const t = text.toLowerCase();
+  
+  // Exact match gets highest score
+  if (t === q) return 100;
+  
+  // Word-boundary match
+  const words = t.split(/[\s\-_,./]+/);
+  for (const word of words) {
+    if (word === q) return 90;
+    if (word.startsWith(q)) return 80;
+  }
+  
+  // Fuzzy match: check if all query chars appear in order
+  let qi = 0;
+  let score = 0;
+  let consecutive = 0;
+  let started = false;
+  
+  for (let ti = 0; ti < t.length && qi < q.length; ti++) {
+    if (t[ti] === q[qi]) {
+      if (!started) {
+        started = true;
+        // Bonus for matching at start of word
+        if (ti === 0 || t[ti - 1] === ' ' || t[ti - 1] === '-' || t[ti - 1] === '_') {
+          score += 5;
+        }
+      }
+      if (consecutive > 0) score += 3; // consecutive char bonus
+      else score += 1;
+      consecutive++;
+      qi++;
+    } else {
+      consecutive = 0;
+    }
+  }
+  
+  // All query chars found in order
+  if (qi === q.length) {
+    // Penalty for gaps between matched chars
+    const gapPenalty = (t.length - qi) * 0.1;
+    return Math.max(1, score - gapPenalty);
+  }
+  
+  return 0;
 }

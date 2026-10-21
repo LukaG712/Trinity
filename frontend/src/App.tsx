@@ -11,7 +11,7 @@ import { fetchCloudModels, fetchCloudProviders, improveWithCloudModel, fetchSave
 import { loadDirectoryHandle, pickWishlistDirectory, readWishlistFile, removeDirectoryHandle, saveDirectoryHandle, supportsDirectoryPicker, type WishrDirectoryHandle, writeWishlistFile } from "./folderStorage";
 import { downloadWishlistJson, downloadWishlistZip } from "./zipExport";
 import { parseImportFiles, type ImportResult } from "./importer";
-import { emptyWishlist, formatMoney, mergeWishlists, readStoredJson, safeLink, subtreeIds, validateWishlist, verifiedEuroTotal, type ExchangeCurrency, type OllamaConfig, type Rate, type Wishlist, type WishlistGroup, type WishlistItem } from "./domain";
+import { emptyWishlist, formatMoney, fuzzyMatch, mergeWishlists, readStoredJson, safeLink, subtreeIds, validateWishlist, verifiedEuroTotal, type ExchangeCurrency, type OllamaConfig, type Rate, type Wishlist, type WishlistGroup, type WishlistItem } from "./domain";
 
 const DEFAULT_OLLAMA_URL = "http://localhost:11434";
 const FALLBACK_CURRENCIES: ExchangeCurrency[] = [
@@ -75,6 +75,7 @@ function App() {
   const [sort, setSort] = useState<Sort>("recent");
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [comparisonMode, setComparisonMode] = useState(false);
+  const [timelineItem, setTimelineItem] = useState<WishlistItem | null>(null);
   const [currency, setCurrency] = useState(() => localStorage.getItem("wishr-currency") || "EUR");
   const activeCurrencyRef = useRef(currency);
   const [currencies, setCurrencies] = useState(FALLBACK_CURRENCIES);
@@ -131,6 +132,7 @@ function App() {
     try { return (localStorage.getItem("wishr-theme-schedule") as "manual" | "auto" | "morning-light-night-dark") || "manual"; } catch { return "manual"; }
   });
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [monthlyBudget, setMonthlyBudget] = useState<number | null>(() => {
     try {
       const stored = localStorage.getItem("wishr-monthly-budget");
@@ -782,15 +784,16 @@ function App() {
   const filteredItems = useMemo(() => {
     const query = deferredSearch.trim().toLocaleLowerCase();
     const items = groupItems.filter((item) => {
-      const matchesText = !query || (searchIndex.get(item.id) || "").includes(query);
+      const matchesText = !query || fuzzyMatch(query, searchIndex.get(item.id) || "") > 0;
       const matchesTag = !selectedTag || (item.tags || []).includes(selectedTag);
       const matchesShoppingList = !shoppingListMode || (item.status || "wanted") === "purchased";
+      const matchesFavorited = !showFavoritesOnly || item.favorited;
       const matchesFilter = filter === "all" ||
         (filter === "priced" && item.priceEur != null && !item.currencyUnverified) ||
         (filter === "unpriced" && (item.priceEur == null || item.currencyUnverified)) ||
         (filter === "priority" && Boolean(item.priority && ["high", "urgent"].includes(item.priority.toLowerCase()))) ||
         (filter === "status" && statusFilter !== "all" && (item.status || "wanted") === statusFilter);
-      return matchesText && matchesTag && matchesShoppingList && matchesFilter;
+      return matchesText && matchesTag && matchesShoppingList && matchesFavorited && matchesFilter;
     });
     const priorityOrder = { high: 0, urgent: 0, medium: 1, low: 2 };
     const statusOrder = { wanted: 0, researching: 1, planned: 2, purchased: 3 };
@@ -808,8 +811,16 @@ function App() {
       return sa - sb;
     });
     else if (sort === "date-added") items.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+    // Sort by fuzzy match score when searching
+    if (query) {
+      items.sort((a, b) => {
+        const scoreA = fuzzyMatch(query, searchIndex.get(a.id) || "");
+        const scoreB = fuzzyMatch(query, searchIndex.get(b.id) || "");
+        return scoreB - scoreA;
+      });
+    }
     return items;
-  }, [deferredSearch, filter, statusFilter, groupItems, searchIndex, sort, selectedTag, shoppingListMode]);
+  }, [deferredSearch, filter, statusFilter, groupItems, searchIndex, sort, selectedTag, shoppingListMode, showFavoritesOnly]);
   const totalEur = useMemo(() => verifiedEuroTotal(wishlist.items), [wishlist.items]);
   const visibleItems = filteredItems.slice(0, itemsToShow);
   const displayMoney = (eur: number) => currency === "EUR" || !rate?.rate
@@ -859,17 +870,17 @@ function App() {
     setNotice(form.id ? "Changes saved." : `${clean.name} added to your list.`);
   };
 
-  const saveGroup = (name: string, parentId?: string) => {
+  const saveGroup = (name: string, parentId?: string, color?: string) => {
     if (cacheIssueRef.current && !folderRef.current) return;
     if (groupEditor) {
       commitWishlist({
         ...wishlist,
         groups: wishlist.groups.map((group) => group.id === groupEditor.id
-          ? { ...group, name, parentId: parentId || undefined }
+          ? { ...group, name, parentId: parentId || undefined, color: color || undefined }
           : group),
       });
     } else {
-      const group = { id: crypto.randomUUID(), name, parentId };
+      const group = { id: crypto.randomUUID(), name, parentId, ...(color ? { color } : {}) };
       commitWishlist({ ...wishlist, groups: [...wishlist.groups, group] });
       setSelectedGroup(group.id);
       setNotice(`${name} group created.`);
@@ -901,6 +912,13 @@ function App() {
     const duplicate = { ...item, id: crypto.randomUUID(), name: `${item.name} (copy)`, createdAt: Date.now() };
     commitWishlist({ ...wishlist, items: [duplicate, ...wishlist.items] });
     setNotice(`${duplicate.name} added to your list.`);
+  };
+
+  const toggleFavorite = (itemId: string) => {
+    const items = wishlist.items.map((entry) =>
+      entry.id === itemId ? { ...entry, favorited: !entry.favorited } : entry
+    );
+    commitWishlist({ ...wishlist, items });
   };
 
   const toggleGroupCollapse = (groupId: string) => {
@@ -983,6 +1001,69 @@ function App() {
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = "troved-wishlist.csv";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  // Markdown Export
+  const exportMarkdown = () => {
+    const lines: string[] = [];
+    lines.push("# Troved Wishlist");
+    lines.push("");
+    lines.push(`Exported on ${new Date().toLocaleDateString()} · ${wishlist.items.length} items across ${wishlist.groups.length} collections`);
+    lines.push("");
+    
+    // Group items by group
+    const itemsByGroup = new Map<string, WishlistItem[]>();
+    for (const item of wishlist.items) {
+      const existing = itemsByGroup.get(item.groupId) || [];
+      existing.push(item);
+      itemsByGroup.set(item.groupId, existing);
+    }
+    
+    for (const group of wishlist.groups) {
+      const groupItems = itemsByGroup.get(group.id) || [];
+      if (groupItems.length === 0) continue;
+      
+      const groupTotal = groupItems.reduce((sum, item) => sum + (item.priceEur != null && !item.currencyUnverified ? item.priceEur * (item.quantity || 1) : 0), 0);
+      
+      lines.push(`## ${group.name}`);
+      lines.push("");
+      lines.push(`**Total estimated:** ${formatMoney(groupTotal, "EUR")}`);
+      lines.push("");
+      
+      for (const item of groupItems) {
+        const fav = item.favorited ? " ⭐" : "";
+        const status = item.status && item.status !== "wanted" ? ` [${item.status}]` : "";
+        const priority = item.priority ? ` (${item.priority} priority)` : "";
+        lines.push(`### ${item.name}${fav}${status}${priority}`);
+        lines.push("");
+        
+        if (item.brandModel) lines.push(`- **Brand/Model:** ${item.brandModel}`);
+        if (item.subgroup) lines.push(`- **Subgroup:** ${item.subgroup}`);
+        if (item.quantity && item.quantity > 1) lines.push(`- **Quantity:** ${item.quantity}`);
+        if (item.priceEur != null) lines.push(`- **Price:** ${formatMoney(item.priceEur * (item.quantity || 1), "EUR")}`);
+        if (item.targetPrice != null && item.targetPrice > 0) lines.push(`- **Target price:** ${formatMoney(item.targetPrice, "EUR")}`);
+        if (item.status === "purchased" && item.purchaseDate) lines.push(`- **Purchased:** ${item.purchaseDate}`);
+        if (item.status === "purchased" && item.purchasedFrom) lines.push(`- **From:** ${item.purchasedFrom}`);
+        if (item.blockedBy) lines.push(`- **Blocked by:** ${item.blockedBy}`);
+        if (item.tags?.length) lines.push(`- **Tags:** ${item.tags.join(", ")}`);
+        if (item.link) lines.push(`- **Link:** [Visit](${item.link})`);
+        if (item.imageUrl) lines.push(`- **Image:** ${item.imageUrl}`);
+        if (item.notes) lines.push(`- **Notes:** ${item.notes}`);
+        
+        lines.push("");
+      }
+    }
+    
+    const md = lines.join("\n");
+    const blob = new Blob([md], { type: "text/markdown;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "troved-wishlist.md";
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
@@ -1556,7 +1637,7 @@ function App() {
           }}>
           <button className="group-link" onClick={() => { setSelectedGroup(group.id); setCollectionsOpen(false); }} title={`${group.name} · ${stats.count} ${stats.count === 1 ? "idea" : "ideas"} · ${displayMoney(stats.total)} estimated total`}>
             {childGroups && <button className="group-collapse-btn" onClick={(e) => { e.stopPropagation(); toggleGroupCollapse(group.id); }} aria-label={isCollapsed ? `Expand ${group.name}` : `Collapse ${group.name}`}>{isCollapsed ? <ChevronDown size={13} /> : <ChevronDown size={13} style={{ transform: 'rotate(180deg)' }} />}</button>}
-            <span className="group-glyph"><span /></span><span className="group-link-name">{group.name}</span><small key={stats.count}>{stats.count}</small>
+            <span className="group-glyph" style={group.color ? { '--group-color': group.color } as React.CSSProperties : undefined}><span /></span><span className="group-link-name">{group.name}</span><small key={stats.count}>{stats.count}</small>
           </button>
           <details className="group-actions"><summary aria-label={`Manage ${group.name}`}><MoreHorizontal size={16} /></summary><div className="group-menu">
             <button onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); setGroupEditor(group); }}>Edit group</button>
@@ -1650,6 +1731,7 @@ function App() {
                 {([["all", "Everything"], ["priced", "With a price"], ["unpriced", "No price"], ["priority", "High priority"], ["status", "By status"]] as const).map(([value, label]) => <button key={value} className={`filter-chip ${filter === value ? "active" : ""}`} onClick={() => { setFilter(value); if (value !== "status") setStatusFilter("all"); }} aria-pressed={filter === value}>{label}</button>)}
                 <button className={`filter-chip ${shoppingListMode ? "active" : ""}`} onClick={() => { setShoppingListMode(!shoppingListMode); if (shoppingListMode) { setStatusFilter("all"); setFilter("all"); } else { setStatusFilter("purchased"); setFilter("status"); } }} aria-pressed={shoppingListMode} title="Show only purchased items in a compact checklist">{shoppingListMode ? "📋 Shopping" : "🛒 Shopping list"}</button>
                 <button className={`filter-chip ${statsOpen ? "active" : ""}`} onClick={() => setStatsOpen(true)} aria-pressed={statsOpen}>📊 Stats</button>
+                <button className={`filter-chip ${showFavoritesOnly ? "active" : ""}`} onClick={() => setShowFavoritesOnly(!showFavoritesOnly)} aria-pressed={showFavoritesOnly}>⭐ Favorites</button>
                 <button className={`filter-chip ${goalsOpen ? "active" : ""}`} onClick={() => setGoalsOpen(true)} aria-pressed={goalsOpen}>🎯 Goals</button>
                 <button className={`filter-chip ${shareOpen ? "active" : ""}`} onClick={() => setShareOpen(true)} aria-pressed={shareOpen}>🔗 Share</button>
               </div>
@@ -1697,6 +1779,7 @@ function App() {
                     {item.imageUrl && <div className="item-image"><img src={item.imageUrl} alt={item.name} loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>}
                     <div className="item-card-top">
                       <label className="item-checkbox"><input type="checkbox" checked={isSelected} onChange={() => toggleSelectItem(item.id)} /><span><Check size={12} /></span></label>
+                      <button className={`icon-btn item-fav-btn ${item.favorited ? "favorited" : ""}`} onClick={() => toggleFavorite(item.id)} aria-label={item.favorited ? "Remove from favorites" : "Add to favorites"} title={item.favorited ? "Unfavorite" : "Favorite"}><Heart size={14} fill={item.favorited ? "currentColor" : "none"} /></button>
                       <span className={`item-symbol ${item.currencyUnverified ? "unverified" : ""}`}><ShoppingBag size={17} /></span><div className="item-badges">{item.priority && <span className={`priority-tag ${item.priority.toLowerCase()}`}>{item.priority}</span>}{item.tags?.length && item.tags.map((tag) => <span key={tag} className="tag-tag">{tag}</span>)}{item.status && item.status !== "wanted" && <span className="status-tag">{item.status}</span>}{priceAlert && <span className="alert-tag" title={`Price ${formatMoney(item.priceEur ?? 0, "EUR")} is at or below your target ${formatMoney(item.targetPrice ?? 0, "EUR")}`}>🔔 Deal!</span>}</div>
                       <details className="item-more"><summary aria-label={`Actions for ${item.name}`}><MoreHorizontal size={17} /></summary><div className="group-menu"><button disabled={Boolean(cacheIssue)} onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); setItemEditor(item); }}><Pencil size={14} /> Edit idea</button><button disabled={Boolean(cacheIssue)} onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); duplicateItem(item); }}><Copy size={14} /> Duplicate</button><button disabled={Boolean(cacheIssue)} className="danger-text" onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); removeItem(item); }}><Trash2 size={14} /> Remove…</button></div></details>
                     </div>
@@ -1713,7 +1796,7 @@ function App() {
                             ? <><strong className="price-pending">Not priced</strong><small>A wish, not a promise</small></>
                             : <><strong>{converted == null ? formatMoney(price!, "EUR") : formatMoney(converted, currency)}</strong><small>{currency === "EUR" ? "EUR estimate" : `from ${formatMoney(price!, "EUR")}`}</small></>}
                         {item.targetPrice != null && item.targetPrice > 0 && <small className="target-price-note">Target: {formatMoney(item.targetPrice, "EUR")}</small>}
-                        {item.priceHistory && item.priceHistory.length > 1 && <span className="sparkline" title={`Price history: ${item.priceHistory.map((p: {price: number; date: number}) => `${formatMoney(p.price, "EUR")} on ${new Date(p.date).toLocaleDateString()}`).join(", ")}`}>
+                        {item.priceHistory && item.priceHistory.length > 1 && <span className="sparkline sparkline-clickable" title={`Price history: ${item.priceHistory.map((p: {price: number; date: number}) => `${formatMoney(p.price, "EUR")} on ${new Date(p.date).toLocaleDateString()}`).join(", ")}`} onClick={() => setTimelineItem(item)} style={{cursor: 'pointer'}}>
                           <svg viewBox="0 0 60 20" width="60" height="20">
                             {(() => {
                               const prices = item.priceHistory.map((p: {price: number; date: number}) => p.price);
@@ -1829,6 +1912,89 @@ function App() {
           </table>
         </div>
         <div className="modal-actions"><button type="button" className="text-button" onClick={() => setComparisonMode(false)}>Close</button></div>
+      </DialogFrame>}
+      {timelineItem && timelineItem.priceHistory && timelineItem.priceHistory.length > 1 && <DialogFrame className="timeline-dialog" labelledBy="timeline-title" onClose={() => setTimelineItem(null)}>
+        <ModalHeading eyebrow="PRICE HISTORY" title={`${timelineItem.name} timeline`} id="timeline-title" onClose={() => setTimelineItem(null)} />
+        <div className="timeline-chart">
+          {(() => {
+            const history = timelineItem.priceHistory!;
+            const prices = history.map((p: {price: number; date: number}) => p.price);
+            const min = Math.min(...prices);
+            const max = Math.max(...prices);
+            const range = max - min || 1;
+            const width = 500;
+            const height = 200;
+            const padding = 30;
+            const chartW = width - padding * 2;
+            const chartH = height - padding * 2;
+            const points = history.map((p: {price: number; date: number}, i: number) => ({
+              x: padding + (i / (history.length - 1)) * chartW,
+              y: padding + chartH - ((p.price - min) / range) * chartH,
+              price: p.price,
+              date: p.date
+            }));
+            const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+            const areaPath = linePath + ` L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`;
+            return (
+              <svg viewBox={`0 0 ${width} ${height}`} className="timeline-svg">
+                <defs>
+                  <linearGradient id="timelineGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--green)" stopOpacity="0.3" />
+                    <stop offset="100%" stopColor="var(--green)" stopOpacity="0.02" />
+                  </linearGradient>
+                </defs>
+                {/* Grid lines */}
+                {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
+                  const y = padding + chartH * (1 - frac);
+                  const price = min + range * frac;
+                  return (
+                    <g key={frac}>
+                      <line x1={padding} y1={y} x2={width - padding} y2={y} stroke="var(--line)" strokeWidth="1" strokeDasharray="4,4" />
+                      <text x={padding - 5} y={y + 4} textAnchor="end" fontSize="9" fill="var(--muted)">{price.toFixed(0)}€</text>
+                    </g>
+                  );
+                })}
+                {/* Area fill */}
+                <path d={areaPath} fill="url(#timelineGrad)" />
+                {/* Line */}
+                <path d={linePath} fill="none" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                {/* Data points */}
+                {points.map((p, i) => (
+                  <g key={i}>
+                    <circle cx={p.x} cy={p.y} r="4" fill="var(--green)" stroke="var(--paper)" strokeWidth="2" />
+                    <title>{`${formatMoney(p.price, "EUR")} on ${new Date(p.date).toLocaleDateString()}`}</title>
+                  </g>
+                ))}
+                {/* X-axis labels */}
+                {points.filter((_, i) => i === 0 || i === points.length - 1 || (points.length <= 6 && true)).map((p, i) => (
+                  <text key={i} x={p.x} y={height - 5} textAnchor="middle" fontSize="9" fill="var(--muted)">
+                    {new Date(p.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  </text>
+                ))}
+              </svg>
+            );
+          })()}
+        </div>
+        <div className="timeline-stats">
+          {(() => {
+            const history = timelineItem.priceHistory!;
+            const prices = history.map((p: {price: number; date: number}) => p.price);
+            const min = Math.min(...prices);
+            const max = Math.max(...prices);
+            const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+            const current = timelineItem.priceEur;
+            return (
+              <>
+                <div className="timeline-stat"><span className="timeline-stat-label">Current</span><span className="timeline-stat-value">{current != null ? formatMoney(current, "EUR") : "Not priced"}</span></div>
+                <div className="timeline-stat"><span className="timeline-stat-label">Lowest</span><span className="timeline-stat-value">{formatMoney(min, "EUR")}</span></div>
+                <div className="timeline-stat"><span className="timeline-stat-label">Highest</span><span className="timeline-stat-value">{formatMoney(max, "EUR")}</span></div>
+                <div className="timeline-stat"><span className="timeline-stat-label">Average</span><span className="timeline-stat-value">{formatMoney(avg, "EUR")}</span></div>
+                <div className="timeline-stat"><span className="timeline-stat-label">Data points</span><span className="timeline-stat-value">{history.length}</span></div>
+              </>
+            );
+          })()}
+        </div>
+        <div className="modal-actions"><button type="button" className="text-button" onClick={() => setTimelineItem(null)}>Close</button></div>
       </DialogFrame>}
       {statsOpen && <DialogFrame className="stats-dialog" labelledBy="stats-title" onClose={() => setStatsOpen(false)}>
         <ModalHeading eyebrow="INSIGHTS" title="Wishlist statistics" id="stats-title" onClose={() => setStatsOpen(false)} />
@@ -1962,6 +2128,7 @@ function App() {
             <input ref={restoreInputRef} className="hidden-file-input" type="file" accept=".json,application/json" onChange={(event) => void restoreFromJson(event.target.files?.[0])} />
             <button className="secondary-btn" onClick={() => downloadWishlistJson(wishlist)}><ArrowDownToLine size={15} /> Download JSON</button>
             <button className="secondary-btn" onClick={exportCsv}><ArrowDownToLine size={15} /> Export CSV</button>
+            <button className="secondary-btn" onClick={exportMarkdown}><ArrowDownToLine size={15} /> Export Markdown</button>
             <button className="secondary-btn" onClick={() => downloadWishlistZip(wishlist)}><ArrowDownToLine size={15} /> ZIP backup</button>
             <button className="secondary-btn" onClick={() => window.print()}><ArrowDownToLine size={15} /> Export PDF</button>
             {folderName && <button className="text-button danger-text" disabled={folderBusy} onClick={() => void disconnectFolder()}>Disconnect</button>}

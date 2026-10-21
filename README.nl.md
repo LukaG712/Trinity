@@ -83,6 +83,7 @@ Een optionele lichte server voegt AI-geassisteerde Markdown-import toe (via Open
 
 - **EUR-prijsbijhouding**: Schat prijzen per item met groep- en totaalsamenvattingen, plus optionele dagelijkse referentiekurzen van [Frankfurter](https://www.frankfurter.dev/)
 - **Full-text zoekfunctie**: Zoek door itemnamen, merken, tags, links, notities en aankoopbronnen
+- **Fuzzy zoekfunctie**: Vind items zelfs met typefouten; resultaten gerangschikt op matchkwaliteit
 - **Sorteeropties**: Sorteer op recent toegevoegd, datum, naam (A-Z), laagste/hogste prijs, prioriteit, of status
 - **Vergelijking naast elkaar**: Vergelijk geselecteerde items in een gedetailleerde tabelweergave
 
@@ -104,6 +105,7 @@ Een optionele lichte server voegt AI-geassisteerde Markdown-import toe (via Open
 - **CSV-import**: Importeer CSV-bestanden met wishlist-kolommen
 - **AI-geassisteerde import**: Gebruik OpenAI, Anthropic, Google Gemini, of lokaal Ollama om rommelige Markdown te ordenen
 - **CSV-export**: Exporteer je wishlist als CSV-bestand voor spreadsheets
+- **Markdown-export**: Exporteer je wishlist als opgemaakt Markdown-bestand
 - **JSON-export/herstel**: Download en herstel je wishlist als JSON
 - **ZIP-backup**: Maak portable ZIP-back-ups van je volledige wishlist
 - **PDF-export**: Exporteer een afdrukbare PDF met de printfunctie van de browser
@@ -121,6 +123,7 @@ Een optionele lichte server voegt AI-geassisteerde Markdown-import toe (via Open
 - **Wishlistdoelen**: Stel een doel aantal items in om te kopen met een optionele deadline
 - **Prijsalerts**: Stel een doelprijs in per item; krijg een "🔔 Deal!"-badge wanneer de prijs daalt
 - **Prijs historie**: Houd prijsveranderingen bij over tijd met sparkline-grafieken op itemkaarten
+- **Prijs tijdlijnweergave**: Klik op een sparkline voor een gedetailleerde prijsgrafiek met statistieken
 - **Aankoophistorie**: Registreer wanneer en waar je elk item kocht
 - **Item notitiesjournal**: Voeg gedateerde notities toe aan items over tijd voor onderzoek en beslissingen
 - **Statistieken dashboard**: Bekijk SVG-grafieken met uitgaven per groep en items per status
@@ -137,6 +140,8 @@ Een optionele lichte server voegt AI-geassisteerde Markdown-import toe (via Open
 - **Gebundelde lettertypen**: DM Sans en Manrope via Fontsource; geen externe CDN-aanroepen
 - **Bulkacties**: Selecteer meerdere items om status te wijzigen, te verplaatsen, of te verwijderen
 - **Itemduplicatie**: Dupliceer elk item met één klik vanuit het itemmenu
+- **Itemfavorieten**: Markeer items met een ster voor snelle toegang met een dedicated favorietenfilter
+- **Groep kleurcodering**: Wijs kleuren toe aan groepen voor visuele onderscheiding in de zijbalk
 
 ### 🔒 Gegevens & Privacy
 
