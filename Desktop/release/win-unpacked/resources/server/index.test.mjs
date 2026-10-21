@@ -126,7 +126,7 @@ test("wishlist save and load endpoints work with configured save directory", asy
   const { tmpdir } = await import("node:os");
   const { join } = await import("node:path");
 
-  const tempSaveDir = await mkdtemp(join(tmpdir(), "troved-test-"));
+  const tempSaveDir = await mkdtemp(join(tmpdir(), "Trinity-test-"));
   const tempServer = createAppServer({ saveRoot: tempSaveDir, disableRateLimit: true });
   
   await new Promise((resolve, reject) => {

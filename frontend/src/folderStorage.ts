@@ -29,7 +29,7 @@ export function supportsDirectoryPicker() {
 
 export async function pickWishlistDirectory() {
   const picker = (window as PickerWindow).showDirectoryPicker;
-  if (!picker) throw new Error("This browser does not support choosing a folder. Open Troved in a browser with direct folder access, such as a current version of Chrome or Edge.");
+  if (!picker) throw new Error("This browser does not support choosing a folder. Open Trinity in a browser with direct folder access, such as a current version of Chrome or Edge.");
   return picker.call(window, { mode: "readwrite" });
 }
 

@@ -5,8 +5,8 @@ import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const staticRoot = resolve(process.env.TROVED_STATIC_DIR || resolve(root, "frontend", "dist"));
-const saveRoot = process.env.TROVED_SAVE_DIR ? resolve(process.env.TROVED_SAVE_DIR) : null;
+const staticRoot = resolve(process.env.Trinity_STATIC_DIR || resolve(root, "frontend", "dist"));
+const saveRoot = process.env.Trinity_SAVE_DIR ? resolve(process.env.Trinity_SAVE_DIR) : null;
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "0.0.0.0";
 const requestLimit = 32_000;
@@ -129,7 +129,7 @@ function getProvider(id) {
   if (typeof id !== "string" || !Object.hasOwn(providers, id)) throw new HttpError(400, "Choose a supported AI provider.");
   const provider = providers[id];
   const key = provider.key();
-  if (!key?.trim()) throw new HttpError(503, `${provider.name} is not configured on this Troved server.`);
+  if (!key?.trim()) throw new HttpError(503, `${provider.name} is not configured on this Trinity server.`);
   return { id, provider, key };
 }
 
@@ -240,7 +240,7 @@ async function serveStatic(pathname, request, response) {
   try {
     await access(file);
   } catch {
-    throw new HttpError(503, "The Troved web app has not been built. Run the frontend production build first.");
+    throw new HttpError(503, "The Trinity web app has not been built. Run the frontend production build first.");
   }
   const types = {
     ".css": "text/css; charset=utf-8",
@@ -265,7 +265,7 @@ async function serveStatic(pathname, request, response) {
   }
   const stream = createReadStream(file);
   stream.on("error", (error) => {
-    console.error("Could not serve a static Troved file:", error);
+    console.error("Could not serve a static Trinity file:", error);
     if (!response.headersSent) sendJson(response, 500, { error: "Could not serve the requested file." });
     else response.destroy(error);
   });
@@ -301,7 +301,7 @@ export function createAppServer() {
           return;
         }
         if (request.method === "POST" && pathname === "/api/wishlist/save") {
-          if (!saveRoot) throw new HttpError(503, "Server-side wishlist saving is not configured. Set TROVED_SAVE_DIR on the server.");
+          if (!saveRoot) throw new HttpError(503, "Server-side wishlist saving is not configured. Set Trinity_SAVE_DIR on the server.");
           checkRateLimit(request);
           const payload = await readJson(request);
           if (!payload || typeof payload !== "object" || Array.isArray(payload) || typeof payload.wishlist !== "object") {
@@ -325,7 +325,7 @@ export function createAppServer() {
       await serveStatic(pathname, request, response);
     } catch (error) {
       const status = error instanceof HttpError ? error.status : 500;
-      if (!(error instanceof HttpError)) console.error("Unexpected Troved server error:", error);
+      if (!(error instanceof HttpError)) console.error("Unexpected Trinity server error:", error);
       sendJson(response, status, { error: error instanceof HttpError ? error.message : "Unexpected server error." });
     }
   });
@@ -334,6 +334,6 @@ export function createAppServer() {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("PORT must be a valid TCP port.");
   createAppServer().listen(port, host, () => {
-    console.log(`Troved server listening on ${host}:${port}`);
+    console.log(`Trinity server listening on ${host}:${port}`);
   });
 }

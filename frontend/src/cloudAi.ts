@@ -12,16 +12,16 @@ async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
   try {
     response = await fetch(url, init);
   } catch {
-    throw new Error("The Troved AI server could not be reached. Check the server connection and try again.");
+    throw new Error("The Trinity AI server could not be reached. Check the server connection and try again.");
   }
   const payload = await response.json().catch(() => ({})) as { error?: string } & T;
-  if (!response.ok) throw new Error(payload.error || `The Troved AI server returned ${response.status}.`);
+  if (!response.ok) throw new Error(payload.error || `The Trinity AI server returned ${response.status}.`);
   return payload;
 }
 
 export async function fetchCloudProviders() {
   const payload = await apiRequest<{ providers: CloudAiProvider[] }>("/api/ai/providers");
-  if (!Array.isArray(payload.providers)) throw new Error("The Troved AI server returned an invalid provider list.");
+  if (!Array.isArray(payload.providers)) throw new Error("The Trinity AI server returned an invalid provider list.");
   return payload.providers;
 }
 

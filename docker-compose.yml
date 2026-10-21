@@ -1,7 +1,7 @@
 services:
-  troved:
+  Trinity:
     build: .
-    container_name: troved
+    container_name: Trinity
     restart: unless-stopped
     env_file:
       - path: .env

@@ -31,7 +31,7 @@ function dosDateTime(date: Date) {
 export function createWishlistZip(wishlist: unknown) {
   const entries = [
     { name: "wishlist.json", text: `${JSON.stringify(wishlist, null, 2)}\n` },
-    { name: "README.txt", text: "Troved wishlist backup. The archive contains your data in wishlist.json. Keep this ZIP somewhere safe.\n" },
+    { name: "README.txt", text: "Trinity wishlist backup. The archive contains your data in wishlist.json. Keep this ZIP somewhere safe.\n" },
   ];
   const localParts: number[] = [];
   const centralParts: number[] = [];
@@ -94,7 +94,7 @@ export function downloadWishlistZip(wishlist: unknown) {
   const url = URL.createObjectURL(createWishlistZip(wishlist));
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `troved-backup-${new Date().toISOString().slice(0, 10)}.zip`;
+  anchor.download = `Trinity-backup-${new Date().toISOString().slice(0, 10)}.zip`;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();

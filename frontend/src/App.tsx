@@ -119,7 +119,7 @@ function App() {
   const [cloudModelId, setCloudModelId] = useState(() => localStorage.getItem("wishr-cloud-model") || "");
   const [activeAiProvider, setActiveAiProvider] = useState(() => localStorage.getItem("wishr-ai-provider") || "ollama");
   const [cloudBusy, setCloudBusy] = useState(false);
-  const [cloudMessage, setCloudMessage] = useState("Checking the Troved AI server…");
+  const [cloudMessage, setCloudMessage] = useState("Checking the Trinity AI server…");
   const [cloudReady, setCloudReady] = useState(false);
   const [serverSaveConfigured, setServerSaveConfigured] = useState(false);
   const [serverSaveBusy, setServerSaveBusy] = useState(false);
@@ -461,7 +461,7 @@ function App() {
     }).catch((error) => {
       if (!alive) return;
       setCloudReady(true);
-      setCloudMessage(error instanceof Error ? error.message : "The Troved AI server is not available.");
+      setCloudMessage(error instanceof Error ? error.message : "The Trinity AI server is not available.");
     });
     return () => { alive = false; };
   }, []);
@@ -483,7 +483,7 @@ function App() {
     const provider = cloudProviders.find((entry) => entry.id === cloudProviderId);
     if (!provider?.configured) {
       setCloudModels([]);
-      setCloudMessage(provider ? `${provider.name} is not configured on the Troved server.` : "Select a configured provider.");
+      setCloudMessage(provider ? `${provider.name} is not configured on the Trinity server.` : "Select a configured provider.");
       return;
     }
     let alive = true;
@@ -616,7 +616,7 @@ function App() {
   const refreshCloudModels = async () => {
     const provider = cloudProviders.find((entry) => entry.id === cloudProviderId);
     if (!provider?.configured) {
-      setCloudMessage(provider ? `${provider.name} is not configured on the Troved server.` : "Select a configured provider.");
+      setCloudMessage(provider ? `${provider.name} is not configured on the Trinity server.` : "Select a configured provider.");
       return;
     }
     setCloudBusy(true);
@@ -671,7 +671,7 @@ function App() {
       await writeQueueRef.current.catch(() => undefined);
       const handle = reconnect ? await loadDirectoryHandle() : await pickWishlistDirectory();
       if (!handle) throw new Error("The saved folder is unavailable. Choose the folder again.");
-      if (await handle.requestPermission({ mode: "readwrite" }) !== "granted") throw new Error("Troved needs read and write permission to save in that folder.");
+      if (await handle.requestPermission({ mode: "readwrite" }) !== "granted") throw new Error("Trinity needs read and write permission to save in that folder.");
       await writeQueueRef.current.catch(() => undefined);
       const raw = await readWishlistFile(handle);
       if (raw == null && cacheIssueRef.current) {
@@ -844,7 +844,7 @@ function App() {
     : Boolean(activeCloudProvider && activeAiModel && cloudModels.includes(activeAiModel));
   const activeAiDestination = activeAiProvider === "ollama"
     ? `your Ollama server at ${ollamaConfig.baseUrl}`
-    : activeCloudProvider ? `${activeCloudProvider.name} through your private Troved server` : "a configured AI model";
+    : activeCloudProvider ? `${activeCloudProvider.name} through your private Trinity server` : "a configured AI model";
 
   const addNewItem = () => {
     if (cacheIssueRef.current && !folderRef.current) {
@@ -1000,7 +1000,7 @@ function App() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "troved-wishlist.csv";
+    anchor.download = "Trinity-wishlist.csv";
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
@@ -1010,7 +1010,7 @@ function App() {
   // Markdown Export
   const exportMarkdown = () => {
     const lines: string[] = [];
-    lines.push("# Troved Wishlist");
+    lines.push("# Trinity Wishlist");
     lines.push("");
     lines.push(`Exported on ${new Date().toLocaleDateString()} · ${wishlist.items.length} items across ${wishlist.groups.length} collections`);
     lines.push("");
@@ -1063,7 +1063,7 @@ function App() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "troved-wishlist.md";
+    anchor.download = "Trinity-wishlist.md";
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
@@ -1102,7 +1102,7 @@ function App() {
   const handleItemDrop = (e: React.DragEvent, targetItemId: string) => {
     e.preventDefault();
     const sourceId = e.dataTransfer.getData("text/plain");
-    const groupData = e.dataTransfer.getData("application/x-troved-group");
+    const groupData = e.dataTransfer.getData("application/x-Trinity-group");
     if (groupData) {
       // A group was dropped on an item; move the item to that group
       handleGroupItemDrop(groupData, targetItemId);
@@ -1154,7 +1154,7 @@ function App() {
 
   // Drag and drop for groups
   const handleGroupDragStart = (e: React.DragEvent, groupId: string) => {
-    e.dataTransfer.setData("application/x-troved-group", groupId);
+    e.dataTransfer.setData("application/x-Trinity-group", groupId);
     e.dataTransfer.effectAllowed = "move";
     setDragGroup(groupId);
   };
@@ -1179,7 +1179,7 @@ function App() {
   const handleGroupDrop = (e: React.DragEvent, targetGroupId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    const sourceId = e.dataTransfer.getData("application/x-troved-group");
+    const sourceId = e.dataTransfer.getData("application/x-Trinity-group");
     if (!sourceId || sourceId === targetGroupId) {
       setDragGroup(null);
       setDragOverGroup(null);
@@ -1626,7 +1626,7 @@ function App() {
           }}
           onDragLeave={handleGroupDragLeave}
           onDrop={(e) => {
-            const groupData = e.dataTransfer.getData("application/x-troved-group");
+            const groupData = e.dataTransfer.getData("application/x-Trinity-group");
             if (groupData) {
               handleGroupDrop(e, group.id);
             } else {
@@ -1655,10 +1655,10 @@ function App() {
       <main className="main-area">
         <header className={`topbar ${scrolled ? "scrolled" : ""}`}>
           <div className="topbar-left">
-            <button type="button" className="topbar-logo" onClick={() => { setSelectedGroup("all"); setCollectionsOpen(false); }} aria-label="Troved home">
+            <button type="button" className="topbar-logo" onClick={() => { setSelectedGroup("all"); setCollectionsOpen(false); }} aria-label="Trinity home">
               <span className="brand-symbol" aria-hidden="true"><span /></span>
             </button>
-            <span className="topbar-brand">troved<span className="brand-period">.</span></span>
+            <span className="topbar-brand">Trinity<span className="brand-period">.</span></span>
           </div>
           <nav className="view-switch" aria-label="Workspace">
             <button type="button" className={`collections-tab ${collectionsOpen ? "open" : ""}`} aria-expanded={collectionsOpen} onClick={() => setCollectionsOpen((v) => !v)}>
@@ -1882,7 +1882,7 @@ function App() {
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.href = url;
-              a.download = 'troved-wishlist.json';
+              a.download = 'Trinity-wishlist.json';
               a.click();
               URL.revokeObjectURL(url);
             }}>📁 Download JSON</button>
@@ -2122,7 +2122,7 @@ function App() {
       </DialogFrame>}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)}>
         <SettingsSection icon={<FolderOpen size={17} />} title="Your wishlist file" description={folderName ? `A private wishlist.json in ${folderName}` : "Choose a folder to keep your own copy on this device."}>
-          <p className="settings-copy">Troved keeps a browser copy as you make changes. Where your browser allows it, a folder adds a portable <code>wishlist.json</code> that autosaves. Restoring a file merges unique groups and items instead of replacing your list.</p>
+          <p className="settings-copy">Trinity keeps a browser copy as you make changes. Where your browser allows it, a folder adds a portable <code>wishlist.json</code> that autosaves. Restoring a file merges unique groups and items instead of replacing your list.</p>
           <div className="settings-actions">
             <button className="secondary-btn" onClick={() => restoreInputRef.current?.click()}><FileUp size={15} /> Restore JSON</button>
             <input ref={restoreInputRef} className="hidden-file-input" type="file" accept=".json,application/json" onChange={(event) => void restoreFromJson(event.target.files?.[0])} />
@@ -2154,18 +2154,18 @@ function App() {
             </select>
           </div>
         </SettingsSection>
-        <SettingsSection icon={<ShieldCheck size={17} />} title="Save to server (NAS / SMB)" description={serverSaveConfigured ? "Server-side saving is configured. Your wishlist can be saved to the server's storage directory (e.g. a mounted NAS or SMB share)." : "Not configured. Set TROVED_SAVE_DIR on the Troved server to enable saving to a server directory."}>
+        <SettingsSection icon={<ShieldCheck size={17} />} title="Save to server (NAS / SMB)" description={serverSaveConfigured ? "Server-side saving is configured. Your wishlist can be saved to the server's storage directory (e.g. a mounted NAS or SMB share)." : "Not configured. Set Trinity_SAVE_DIR on the Trinity server to enable saving to a server directory."}>
           <p className="settings-copy">When enabled, clicking Save will write your current wishlist to <code>wishlist.json</code> in the server's configured directory. This directory can be a mounted NAS or SMB share, letting you keep a central copy on your network storage.</p>
           <div className="settings-actions">
             {serverSaveConfigured && !serverSaveBusy && <button className="primary-btn" onClick={() => void saveWishlistToServerFn()}><ShieldCheck size={15} /> Save to server</button>}
             {serverSaveConfigured && serverSaveBusy && <button className="primary-btn" disabled>Saving…</button>}
-            {!serverSaveConfigured && <button className="secondary-btn" disabled>Configure TROVED_SAVE_DIR on the server</button>}
+            {!serverSaveConfigured && <button className="secondary-btn" disabled>Configure Trinity_SAVE_DIR on the server</button>}
             {serverSaveMessage && <span className="settings-copy">{serverSaveMessage}</span>}
           </div>
           <SettingsError>{serverSaveBusy ? "" : serverSaveMessage}</SettingsError>
         </SettingsSection>
         <SettingsSection icon={<Sparkles size={17} />} title="Cloud AI models" description={cloudProviders.some((provider) => provider.configured) ? `${cloudProviders.filter((provider) => provider.configured).length} provider${cloudProviders.filter((provider) => provider.configured).length === 1 ? "" : "s"} configured on your server` : "Optional OpenAI, Anthropic, and Google models."}>
-          <p className="settings-copy">Provider API keys stay in the private Troved server environment and are never sent to this browser. Only Markdown files you choose to improve are sent to the selected provider; review results before importing.</p>
+          <p className="settings-copy">Provider API keys stay in the private Trinity server environment and are never sent to this browser. Only Markdown files you choose to improve are sent to the selected provider; review results before importing.</p>
           <label className="field"><span>Provider</span><select value={cloudProviderId} onChange={(event) => {
             const next = event.target.value;
             setCloudProviderId(next);
@@ -2192,7 +2192,7 @@ function App() {
           <p className="settings-copy">Cloud usage may incur provider charges. API keys must be added to the VM's private <code>.env</code> file; never paste them into the browser or chat.</p>
         </SettingsSection>
         <SettingsSection icon={<Sparkles size={17} />} title="Ollama (optional, local)" description={ollamaConnected ? `Connected · ${ollamaConfig.model}${activeAiProvider === "ollama" ? " · in use" : ""}` : "Use a model already installed on a local Ollama server."}>
-          <p className="settings-copy">Troved parses your files in the browser first. If you choose Improve during import review, the selected Markdown is sent to this Ollama server to sort purchases from notes. Prices and links are kept from the local parser.</p>
+          <p className="settings-copy">Trinity parses your files in the browser first. If you choose Improve during import review, the selected Markdown is sent to this Ollama server to sort purchases from notes. Prices and links are kept from the local parser.</p>
           <form className="ollama-form" onSubmit={(event) => void connectOllama(event)}>
             <label className="field"><span>Ollama server URL</span><input value={ollamaUrl} onChange={(event) => { setOllamaUrl(event.target.value); setOllamaConnected(false); }} placeholder={DEFAULT_OLLAMA_URL} autoComplete="url" /></label>
             {ollamaModels.length > 0 && <label className="field"><span>Installed model</span><select value={ollamaModel} onChange={(event) => { setOllamaModel(event.target.value); const saved = { ...ollamaConfig, baseUrl: normalizeOllamaUrl(ollamaUrl || DEFAULT_OLLAMA_URL), model: event.target.value }; setOllamaConfig(saved); localStorage.setItem("wishr-ollama-config", JSON.stringify(saved)); }}><option value="">Choose a model</option>{ollamaModels.map((model) => <option key={model.name} value={model.name}>{model.name}</option>)}</select></label>}
@@ -2232,7 +2232,7 @@ function App() {
             })()}
           </div>
         </SettingsSection>
-        <p className="settings-footer"><ShieldCheck size={14} /> No wishlist is stored on Troved. Markdown leaves your browser only when you choose Improve, and is sent to the selected AI model.</p>
+        <p className="settings-footer"><ShieldCheck size={14} /> No wishlist is stored on Trinity. Markdown leaves your browser only when you choose Improve, and is sent to the selected AI model.</p>
       </SettingsDialog>}
     </div>
   );

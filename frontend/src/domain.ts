@@ -34,7 +34,7 @@ export type OllamaConfig = { baseUrl: string; model: string };
 export const emptyWishlist = (): Wishlist => ({ version: 1, groups: [], items: [] });
 
 export function validateWishlist(value: unknown): Wishlist {
-  if (!value || typeof value !== "object") throw new Error("This is not a Troved wishlist.");
+  if (!value || typeof value !== "object") throw new Error("This is not a Trinity wishlist.");
   const candidate = value as Partial<Wishlist>;
   if (!Array.isArray(candidate.groups) || !Array.isArray(candidate.items)) {
     throw new Error("This file is missing its wishlist groups or items.");

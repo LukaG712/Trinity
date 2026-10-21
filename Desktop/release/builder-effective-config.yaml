@@ -1,8 +1,8 @@
 directories:
   output: release
   buildResources: build
-appId: com.troved.desktop
-productName: Troved
+appId: com.trinity.desktop
+productName: Trinity
 files:
   - filter:
       - electron/**/*

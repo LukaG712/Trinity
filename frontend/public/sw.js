@@ -1,4 +1,4 @@
-const CACHE_NAME = "troved-v1";
+const CACHE_NAME = "Trinity-v1";
 const SKIP_WAITING = new CustomEvent("skipwaiting");
 
 self.addEventListener("install", (event) => {

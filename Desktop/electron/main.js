@@ -36,7 +36,7 @@ function waitForServer(port, timeout = 15000) {
         if (Date.now() - startTime < timeout) {
           setTimeout(check, 200);
         } else {
-          console.error("[troved] Server health check timed out");
+          console.error("[Trinity] Server health check timed out");
           resolve(false);
         }
       });
@@ -58,7 +58,7 @@ function createWindow() {
     minWidth: 1000,
     minHeight: 700,
     show: false,
-    title: "Troved – Wishlist",
+    title: "Trinity – Wishlist",
     frame: true,
     backgroundColor: "#0d1117",
     webPreferences: {
@@ -99,19 +99,19 @@ function createWindow() {
         PORT: "3000",
         HOST: "127.0.0.1",
         NODE_ENV: "production",
-        TROVED_STATIC_DIR: staticDir,
+        Trinity_STATIC_DIR: staticDir,
       },
     });
 
     serverProcess.stdout.on("data", (data) => {
-      console.log(`[troved-server] ${data.toString().trim()}`);
+      console.log(`[Trinity-server] ${data.toString().trim()}`);
     });
     serverProcess.stderr.on("data", (data) => {
-      console.error(`[troved-server err] ${data.toString().trim()}`);
+      console.error(`[Trinity-server err] ${data.toString().trim()}`);
     });
 
     serverProcess.on("exit", (code, signal) => {
-      console.log(`[troved-server] exited with code ${code} and signal ${signal}`);
+      console.log(`[Trinity-server] exited with code ${code} and signal ${signal}`);
       serverProcess = null;
     });
 
@@ -120,7 +120,7 @@ function createWindow() {
     if (isReady && !mainWindow.isDestroyed()) {
       mainWindow.loadURL("http://127.0.0.1:3000");
     } else {
-      console.error("[troved] Failed to start internal server");
+      console.error("[Trinity] Failed to start internal server");
       mainWindow.webContents.send("server-error", "Failed to start the internal server.");
     }
   };

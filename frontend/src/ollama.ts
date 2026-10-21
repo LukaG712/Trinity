@@ -11,7 +11,7 @@ async function ollamaFetch(url: string, init?: RequestInit) {
   try {
     response = await fetch(url, init);
   } catch {
-    throw new Error("Could not reach Ollama. Make sure it is running at this address and allows the Troved browser origin.");
+    throw new Error("Could not reach Ollama. Make sure it is running at this address and allows the Trinity browser origin.");
   }
   if (!response.ok) {
     let detail = `Ollama returned ${response.status}.`;

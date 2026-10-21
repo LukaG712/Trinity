@@ -1,4 +1,4 @@
-﻿const { app, BrowserWindow, ipcMain, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const path = require("path");
 const { spawn } = require("child_process");
 const url = require("url");
@@ -13,7 +13,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     show: false,
-    title: "Troved - Wishlist",
+    title: "Trinity - Wishlist",
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -47,19 +47,19 @@ function createWindow() {
         PORT: "3000",
         HOST: "127.0.0.1",
         NODE_ENV: "production",
-        TROVED_STATIC_DIR: path.join(__dirname, "..", "frontend", "dist"),
+        Trinity_STATIC_DIR: path.join(__dirname, "..", "frontend", "dist"),
       },
     });
 
     serverProcess.stdout.on("data", (data) => {
-      console.log(`[troved-server] ${data}`);
+      console.log(`[Trinity-server] ${data}`);
     });
     serverProcess.stderr.on("data", (data) => {
-      console.error(`[troved-server err] ${data}`);
+      console.error(`[Trinity-server err] ${data}`);
     });
 
     serverProcess.on("exit", (code) => {
-      console.log(`[troved-server] exited with code ${code}`);
+      console.log(`[Trinity-server] exited with code ${code}`);
       serverProcess = null;
     });
   };

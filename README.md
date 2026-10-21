@@ -1,17 +1,16 @@
 <pre>
- _________________      _____           _____     ____      ____      ______        _____
-/                 \ ___|\    \     ____|\    \   |    |    |    | ___|\     \   ___|\    \
-\______     ______/|    |\    \   /     /\    \  |    |    |    ||     \     \ |    |\    \
-   \( /    /  )/   |    | |    | /     /  \    \ |    |    |    ||     ,_____/||    | |    |
-    ' |   |   '    |    |/____/ |     |    |    ||    |    |    ||     \--'\_|/|    | |    |
-      |   |        |    |\    \ |     |    |    ||    |    |    ||     /___/|  |    | |    |
-     /   //        |    | |    ||\     \  /    /||\    \  /    /||     \____|\ |    | |    |
-    /___//         |____| |____|| \_____\/____/ || \ ___\/___ / ||____ '     /||____|/____/|
-   |`   |          |    | |    | \ |    ||    | / \ |   ||   | / |    /_____/ ||    /    | |
-   |____|          |____| |____|  \|____||____|/   \|___||___|/  |____|     | /|____|____|/
-     \(              \(     )/       \(    )/        \(    )/      \( |_____|/   \(    )/
-      '               '     '         '    '          '    '        '    )/       '    '
-                                                                         '
+ _________________      _____    ____  _____   ______    ____  _________________  _____      _____
+/                 \ ___|\    \  |    ||\    \ |\     \  |    |/                 \|\    \    /    /|
+\______     ______/|    |\    \ |    | \\    \| \     \ |    |\______     ______/| \    \  /    / |
+   \( /    /  )/   |    | |    ||    |  \|    \  \     ||    |   \( /    /  )/   |  \____\/    /  /
+    ' |   |   '    |    |/____/ |    |   |     \  |    ||    |    ' |   |   '     \ |    /    /  /
+      |   |        |    |\    \ |    |   |      \ |    ||    |      |   |          \|___/    /  /
+     /   //        |    | |    ||    |   |    |\ \|    ||    |     /   //              /    /  /
+    /___//         |____| |____||____|   |____||\_____/||____|    /___//              /____/  /
+   |`   |          |    | |    ||    |   |    |/ \|   |||    |   |`   |              |`    | /
+   |____|          |____| |____||____|   |____|   |___|/|____|   |____|              |_____|/
+     \(              \(     )/    \(       \(       )/    \(       \(                   )/
+      '               '     '      '        '       '      '        '                   '
 </pre>
 
 > **A personal, local-first wishlist that runs entirely in your browser.**
@@ -30,7 +29,7 @@ Organize ideas into nested collections, track prices in EUR, import Markdown or 
 
 ## 📖 Table of Contents
 
-- [What is Troved?](#-what-is-troved)
+- [What is Trinity?](#-what-is-Trinity)
 - [Features](#-features)
   - [Core](#core)
   - [Organization](#organization)
@@ -58,15 +57,15 @@ Organize ideas into nested collections, track prices in EUR, import Markdown or 
 
 ---
 
-## 🎯 What is Troved?
+## 🎯 What is Trinity?
 
-Troved is a **wishlist that runs entirely in your browser**. There's no account to create, no cloud database, and no subscription. Your wishlist lives in your browser's storage or in a `wishlist.json` file in a folder you choose, fully portable, fully yours.
+Trinity is a **wishlist that runs entirely in your browser**. There's no account to create, no cloud database, and no subscription. Your wishlist lives in your browser's storage or in a `wishlist.json` file in a folder you choose, fully portable, fully yours.
 
 An optional lightweight server adds AI-assisted Markdown import (via OpenAI, Anthropic, Google Gemini, or local Ollama), but the core app works completely offline without any backend.
 
-**Why Troved?**
+**Why Trinity?**
 
-| Traditional wishlists | Troved |
+| Traditional wishlists | Trinity |
 |---|---|
 | Require an account | No account needed |
 | Store data on their servers | Your data stays on your device |
@@ -153,17 +152,17 @@ An optional lightweight server adds AI-assisted Markdown import (via OpenAI, Ant
 
 ## 🚀 Quick Start
 
-Get Troved running in under a minute:
+Get Trinity running in under a minute:
 
 ```sh
 # Clone and install
-git clone https://github.com/LukaG712/Troved.git
-cd Troved/frontend
+git clone https://github.com/LukaG712/Trinity.git
+cd Trinity/frontend
 npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite (usually `http://127.0.0.1:5173`). That's it, Troved works without any backend.
+Open the local URL printed by Vite (usually `http://127.0.0.1:5173`). That's it, Trinity works without any backend.
 
 **Want AI-assisted import?** Start the optional server in a second terminal:
 
@@ -196,7 +195,7 @@ node server/index.mjs
 | Frontend | Vite (in `frontend/`) |
 | Optional server | Node.js (`server/index.mjs`) |
 | Storage | Browser storage, optionally an autosaved `wishlist.json` in a folder you choose |
-| Cloud AI (optional) | OpenAI, Anthropic, Google Gemini via the Troved server |
+| Cloud AI (optional) | OpenAI, Anthropic, Google Gemini via the Trinity server |
 | Local AI (optional) | Ollama HTTP API, called from the browser |
 | Exchange rates (optional) | Frankfurter reference rates |
 | Server tests | `npm test` in `server/` (6 passing) |
@@ -205,8 +204,8 @@ node server/index.mjs
 
 ```mermaid
 flowchart LR
-    Browser[Troved frontend] --> Store[(Browser storage / wishlist.json folder)]
-    Browser -->|optional, /api/ai/*| Server[Troved server]
+    Browser[Trinity frontend] --> Store[(Browser storage / wishlist.json folder)]
+    Browser -->|optional, /api/ai/*| Server[Trinity server]
     Server -->|API keys stay here| Cloud[OpenAI / Anthropic / Gemini]
     Browser -->|optional| Ollama[Ollama]
     Browser -->|optional, daily rates| FX[Frankfurter]
@@ -258,7 +257,7 @@ This produces `frontend/dist`, which the server serves on the same origin. The D
 
 ## 🤖 AI-Assisted Import
 
-Troved imports `.md`, `.markdown`, and `.csv` files locally. The deterministic parser detects headings, list entries, Markdown tables, and wishlist CSV columns. Review the results and select what to import.
+Trinity imports `.md`, `.markdown`, and `.csv` files locally. The deterministic parser detects headings, list entries, Markdown tables, and wishlist CSV columns. Review the results and select what to import.
 
 ### How AI assistance works
 
@@ -266,9 +265,9 @@ For optional AI-assisted Markdown organization, connect one of:
 
 | Provider | How it connects | Privacy |
 |---|---|---|
-| **OpenAI** | Through the Troved server | API key stays on server |
-| **Anthropic** | Through the Troved server | API key stays on server |
-| **Google Gemini** | Through the Troved server | API key stays on server |
+| **OpenAI** | Through the Trinity server | API key stays on server |
+| **Anthropic** | Through the Trinity server | API key stays on server |
+| **Google Gemini** | Through the Trinity server | API key stays on server |
 | **Ollama (local)** | Directly from your browser | Fully offline, no API key |
 
 > 🔒 **Privacy-first:** AI assistance only refines Markdown import results. Only the Markdown you explicitly choose to **Improve** is sent. CSV files are never sent for AI processing, and nothing is imported until you confirm.
@@ -301,11 +300,11 @@ chmod 600 .env  # Restrict access
 | `OPENAI_API_KEY` | None | Enables OpenAI models for import assistance |
 | `ANTHROPIC_API_KEY` | None | Enables Anthropic models for import assistance |
 | `GEMINI_API_KEY` | None | Enables Google Gemini models for import assistance |
-| `TROVED_SAVE_DIR` | None | Server-side wishlist saving directory (e.g., mounted NAS/SMB) |
+| `Trinity_SAVE_DIR` | None | Server-side wishlist saving directory (e.g., mounted NAS/SMB) |
 
 ### Setting up AI in the app
 
-After configuring `.env`, in Troved open **Preferences → Cloud AI models**, refresh models, choose a provider and model, and select **Use for imports**.
+After configuring `.env`, in Trinity open **Preferences → Cloud AI models**, refresh models, choose a provider and model, and select **Use for imports**.
 
 > ⚠️ **Security:** The frontend never receives API keys. Never paste credentials into chat or browser settings.
 
@@ -317,12 +316,12 @@ The theme is remembered in `wishr-theme` (or follows the operating system when n
 
 ## 💾 Server-Side Saving (NAS / SMB)
 
-Troved can optionally save your wishlist to a directory on the server instead of (or in addition to) browser storage. This is useful for keeping a central copy on a NAS or SMB share.
+Trinity can optionally save your wishlist to a directory on the server instead of (or in addition to) browser storage. This is useful for keeping a central copy on a NAS or SMB share.
 
 ### Setup
 
-1. Mount your NAS or SMB share on the server at a path such as `/mnt/nas/troved`
-2. Add `TROVED_SAVE_DIR=/mnt/nas/troved` to the server's `.env` file
+1. Mount your NAS or SMB share on the server at a path such as `/mnt/nas/Trinity`
+2. Add `Trinity_SAVE_DIR=/mnt/nas/Trinity` to the server's `.env` file
 3. Restart the server: `docker compose up -d --build`
 4. Open **Settings → Save to server (NAS / SMB)** and click **Save to server**
 
@@ -332,7 +331,7 @@ The server writes `wishlist.json` to the configured directory. The wishlist file
 
 ## 📁 Data & Backups
 
-Troved stores its working copy in browser storage. Here's how to keep your data safe:
+Trinity stores its working copy in browser storage. Here's how to keep your data safe:
 
 ### Folder autosave
 
@@ -362,7 +361,7 @@ On browsers without direct folder writing, download JSON after editing and save 
 
 The included Docker setup is intended for a **private home-network/VPN deployment**. The server has **no user authentication**, do not expose port 3000 to the public internet.
 
-> ⚠️ **Security warning:** Never add a router port-forward or publish Troved on an untrusted network.
+> ⚠️ **Security warning:** Never add a router port-forward or publish Trinity on an untrusted network.
 
 #### Step 1: Create the VM
 
@@ -376,7 +375,7 @@ In Proxmox, create an Ubuntu Server 24.04 LTS VM attached to your trusted LAN br
 
 Give the VM a DHCP reservation in your router so its LAN address remains stable. Install Docker Engine following the official [Docker Ubuntu instructions](https://docs.docker.com/engine/install/ubuntu/).
 
-#### Step 2: Copy and configure Troved
+#### Step 2: Copy and configure Trinity
 
 ```sh
 # Copy project to VM via scp, then:
@@ -389,7 +388,7 @@ Build and start:
 
 ```sh
 docker compose up -d --build
-docker compose logs -f troved
+docker compose logs -f Trinity
 ```
 
 Visit `http://<VM-LAN-IP>:3000` from a device on your trusted network.
@@ -421,9 +420,9 @@ A standalone Windows desktop app is available, no browser tabs, no installation 
 
 | File | Description |
 |---|---|
-| `Desktop/release/Troved-Portable.exe` | Single portable executable, double-click and run |
+| `Desktop/release/Trinity-Portable.exe` | Single portable executable, double-click and run |
 
-The desktop app bundles the frontend and Node.js server together, opening Troved in its own native window. Your data stays in browser storage or a folder you choose, exactly like the web version.
+The desktop app bundles the frontend and Node.js server together, opening Trinity in its own native window. Your data stays in browser storage or a folder you choose, exactly like the web version.
 
 #### Building the desktop app
 
@@ -435,7 +434,7 @@ cd frontend && npm ci && npm run build
 cd ../Desktop && npm ci && npm run build
 ```
 
-The portable executable will be at `Desktop/release/Troved-Portable.exe`.
+The portable executable will be at `Desktop/release/Trinity-Portable.exe`.
 
 ## 🛠️ Development
 
@@ -462,7 +461,7 @@ npm run build
 ### Project structure
 
 ```text
-Troved/
+Trinity/
 ├── frontend/       Vite application (wishlist UI, import parser, backups)
 │   ├── src/        TypeScript/React source files
 │   ├── index.html  Entry point
@@ -501,7 +500,7 @@ Troved/
 - **Escape to close**: Press `Esc` to close any dialog (focus is restored)
 - **Reduced motion**: Respects the system's `prefers-reduced-motion` preference
 - **Light & dark themes**: Two complete themes with proper contrast ratios
-- **Custom favicon**: Built-in Troved favicon (dark tile with a green dot)
+- **Custom favicon**: Built-in Trinity favicon (dark tile with a green dot)
 
 ---
 
@@ -515,7 +514,7 @@ Troved/
 ### AI import doesn't work
 
 - **Cause:** Missing or invalid API key in `.env`.
-- **Solution:** Verify your API key is correct and the server is running. Check `docker compose logs troved` for errors.
+- **Solution:** Verify your API key is correct and the server is running. Check `docker compose logs Trinity` for errors.
 
 ### Docker port conflicts
 
