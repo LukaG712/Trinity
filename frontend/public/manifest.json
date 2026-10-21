@@ -1,0 +1,17 @@
+{
+  "name": "Troved — Wishlist",
+  "short_name": "Troved",
+  "description": "Save wishlist ideas, organize collections, and track estimated costs. Your data stays on your device.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f8f5",
+  "theme_color": "#f6f8f5",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

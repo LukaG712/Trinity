@@ -13,13 +13,32 @@ Troved is een wishlist die in je browser draait. Je wishlist blijft in je browse
 - Geneste collecties voor het organiseren van wishlist-items
 - EUR-schattingen per item, met totals en optionele dagelijkse referentiekoersen van [Frankfurter](https://www.frankfurter.dev/)
 - Zoek en filter in je hele lijst
-- Lokaal importeren van `.md`, `.markdown`, en `.csv`-bestanden (koppen, lijstitems, Markdown-tabellen, en wishlist CSV-kolommen), met controle voordat iets wordt geÃ¯mporteerd
+- Status per item (Gewild, Onderzoek, Gepland, Aangeschaft) met status-gebaseerd filteren
+- Lokaal importeren van `.md`, `.markdown`, en `.csv`-bestanden (koppen, lijstitems, Markdown-tabellen, en wishlist CSV-kolommen), met controle voordat iets wordt geïmporteerd
+- Exporteer wishlist als CSV voor gebruik in spreadsheets
 - Optionele AI-geassisteerde Markdown-organisatie (OpenAI, Anthropic, Google Gemini, of Ollama)
 - Folder autosave naar een `wishlist.json`-bestand, JSON download/herstel, en ZIP-backup
-- Licht en donker thema, toegepast vÃ³Ã³r eerste paint zodat donker-gebruikers geen licht flits zien
+- Bulkacties: selecteer meerdere items om status te wijzigen, te verplaatsen, of te verwijderen
+- Vergelijkingsweergave naast elkaar voor geselecteerde items
+- Licht en donker thema, toegepast vóór eerste paint zodat donker-gebruikers geen licht flits zien
 - Fonts gebundeld via Fontsource (DM Sans, Manrope); er wordt geen webfont-CDN benaderd
 - Toetsenbordnavigatie, dialoogfocusval, en ondersteuning voor verminderde beweging
 - Tags en prioriteitsbeoordeling per item voor kruisende organisatie
+- Sleepfunctie: herschik items door ze op andere items te slepen, verplaats items tussen groepen door ze op een groep in de zijbalk te droppe, en nest groepen door ze op elkaar te slepen — werkt ook op touch-apparaten
+- PWA-ondersteuning: installeer als standalone-app met offline-toegang
+- Sorteeropties: sorteer op recent toegevoegd, datum, naam, laagste/hogste prijs, prioriteit, of status
+- Prijsalerts: stel een doelprijs in per item en ontvang een visueel "Deal!"-badge wanneer de huidige prijs op of onder uw doel daalt
+- Itemafbeeldingen: voeg een productafbeeldings-URL toe aan elk item, weergegeven als miniatuur op de kaart
+- Tagfiltering: filter items op tags met één-klik tag-chips die itemaantallen tonen
+- Winkelwagentje-modus: schakel over naar een compacte controlelijstweergave met alleen gekochte items, geoptimaliseerd voor gebruik in de winkel
+- Donkere modus-schema: schakel automatisch tussen lichte en donkere thema's op basis van tijd van dag of systeemvoorkeur
+- Wishlist delen: genereer een deelbare link met uw wishlist-gegevens gecodeerd in de URL, of download als JSON
+- Budgettracking: stel een maandbudget in en houd uitgaven bij met een visuele voortgangsbalk
+- Statistieken dashboard: bekijk SVG-grafieken met uitgaven per groep en items per status
+- PDF export: exporteer je wensenlijst als een afdrukbare PDF met de printfunctie van de browser
+- Aankoophistorie: registreer aankoopdatum en winkel voor gekochte items
+- Item notitiesjournal: voeg gedateerde notities toe aan items over tijd voor het bijhouden van onderzoek en beslissingen
+- Prijs historie: houd prijsveranderingen bij over tijd met sparkline-grafieken op itemkaarten
 
 ## Sneltoetsen
 
@@ -42,6 +61,7 @@ Sneltoets-hints verschijnen wanneer je hovert of focust het zoekveld en de quick
 | Lokale AI (optioneel) | Ollama HTTP API, aangeroepen vanuit de browser |
 | Wisselkoersen (optioneel) | Frankfurter referentiekoersen |
 | Server tests | `npm test` in `server/` (6 slagen) |
+| Frontend tests | `npm test` in `frontend/` (27 slagen) |
 | Deployment | Docker image / Docker Compose |
 
 ```mermaid

@@ -4,7 +4,7 @@ import type { ImportResult } from "./importer";
 import type { WishlistGroup, WishlistItem } from "./domain";
 import { safeLink, subtreeIds } from "./domain";
 
-function DialogFrame({ children, className = "", labelledBy, onClose }: {
+export function DialogFrame({ children, className = "", labelledBy, onClose }: {
   children: ReactNode;
   className?: string;
   labelledBy: string;
@@ -53,7 +53,7 @@ function DialogFrame({ children, className = "", labelledBy, onClose }: {
   );
 }
 
-function ModalHeading({ eyebrow, title, id, onClose }: { eyebrow: string; title: string; id: string; onClose: () => void }) {
+export function ModalHeading({ eyebrow, title, id, onClose }: { eyebrow: string; title: string; id: string; onClose: () => void }) {
   return (
     <div className="modal-heading">
       <div><span className="modal-kicker">{eyebrow}</span><h2 id={id}>{title}</h2></div>
@@ -114,6 +114,10 @@ export function ItemDialog({ item, groups, onClose, onSave }: {
           <label className="field"><span>Estimated price <i>EUR</i></span><div className="price-input"><span>€</span><input type="number" min="0" step="0.01" value={priceInput} onChange={(event) => { setPriceInput(event.target.value); setError(""); }} placeholder="Not priced yet" /></div></label>
           <label className="field"><span>Quantity <i>Optional</i></span><input type="number" min="1" max="1000000" step="1" value={form.quantity ?? 1} onChange={(event) => set("quantity", Number(event.target.value) || 1)} /></label>
         </div>
+        <div className="field-grid">
+          <label className="field"><span>Target price <i>EUR</i> <small>(alert when below)</small></span><div className="price-input"><span>€</span><input type="number" min="0" step="0.01" value={form.targetPrice == null ? "" : String(form.targetPrice)} onChange={(event) => { const v = event.target.value.trim() === "" ? null : Number(event.target.value); set("targetPrice", v); setError(""); }} placeholder="Optional target" /></div></label>
+          <label className="field"><span>Image URL <i>Optional</i></span><input type="url" maxLength={500} value={form.imageUrl || ""} onChange={(event) => set("imageUrl", event.target.value)} placeholder="https://…" /></label>
+        </div>
         {form.currencyUnverified && <div className="price-warning"><ShieldCheck size={16} /><span>The imported amount {form.unverifiedAmount?.toLocaleString() ?? "—"} has an unverified currency, so it is excluded from totals. Enter a confirmed EUR estimate to include it.</span></div>}
         <label className="field field-wide"><span>Brand or model <i>Optional</i></span><input maxLength={120} value={form.brandModel || ""} onChange={(event) => set("brandModel", event.target.value)} placeholder="Maker, model, or reference" /></label>
         <div className="field-grid">
@@ -122,7 +126,30 @@ export function ItemDialog({ item, groups, onClose, onSave }: {
         </div>
         <label className="field field-wide"><span>Product link <i>Optional</i></span><div className="field-with-icon"><Link2 size={16} /><input type="url" value={form.link || ""} onChange={(event) => set("link", event.target.value)} placeholder="https://…" /></div></label>
         <label className="field field-wide"><span>Notes <i>Optional</i></span><textarea rows={3} maxLength={2000} value={form.notes || ""} onChange={(event) => set("notes", event.target.value)} placeholder="What makes this one worth remembering?" /></label>
-        <label className=\"field field-wide\"><span>Tags <i>Optional</i> <small>comma-separated</small></span><input maxLength={200} value={form.tags?.join(\", \") || \"\"} onChange={(event) => set(\"tags\", event.target.value.split(\",\").map((tag) => tag.trim()).filter(Boolean))} placeholder=\"electronics, gift, urgent…\" /></label>
+        <label className="field field-wide"><span>Tags <i>Optional</i> <small>comma-separated</small></span><input maxLength={200} value={form.tags?.join(", ") || ""} onChange={(event) => set("tags", event.target.value.split(",").map((tag) => tag.trim()).filter(Boolean))} placeholder="electronics, gift, urgent…" /></label>
+        {form.status === "purchased" && <div className="field-grid">
+          <label className="field"><span>Purchase date <i>Optional</i></span><input type="date" value={form.purchaseDate || ""} onChange={(event) => set("purchaseDate", event.target.value)} /></label>
+          <label className="field"><span>Purchased from <i>Optional</i></span><input maxLength={120} value={form.purchasedFrom || ""} onChange={(event) => set("purchasedFrom", event.target.value)} placeholder="Store or website" /></label>
+        </div>}
+        <details className="item-details-section"><summary>Notes journal</summary>
+          <div className="notes-journal">
+            {(form.notesJournal || []).map((entry, idx) => (
+              <div key={idx} className="note-entry">
+                <small className="note-date">{new Date(entry.date).toLocaleDateString()}</small>
+                <span>{entry.text}</span>
+              </div>
+            ))}
+            <div className="add-note">
+              <input type="text" maxLength={500} placeholder="Add a dated note…" onKeyDown={(event) => {
+                if (event.key === "Enter" && event.currentTarget.value.trim()) {
+                  const newEntry = { text: event.currentTarget.value.trim(), date: Date.now() };
+                  set("notesJournal", [...(form.notesJournal || []), newEntry]);
+                  event.currentTarget.value = "";
+                }
+              }} />
+            </div>
+          </div>
+        </details>
         {error && <p className="form-error" role="alert">{error}</p>}
         <div className="modal-actions"><button type="button" className="text-button" onClick={onClose}>Cancel</button><button className="primary-btn" type="submit" disabled={!groups.length}><Check size={16} /> Save item</button></div>
         {!groups.length && <p className="form-error">Create a group first, then add items to it.</p>}

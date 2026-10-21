@@ -1,4 +1,6 @@
 export type WishlistGroup = { id: string; name: string; parentId?: string };
+export type PriceHistoryEntry = { price: number; date: number };
+export type NoteEntry = { text: string; date: number };
 export type WishlistItem = {
   id: string;
   groupId: string;
@@ -15,6 +17,13 @@ export type WishlistItem = {
   link?: string;
   notes?: string;
   tags?: string[];
+  imageUrl?: string;
+  targetPrice?: number | null;
+  createdAt?: number;
+  purchaseDate?: string;
+  purchasedFrom?: string;
+  priceHistory?: PriceHistoryEntry[];
+  notesJournal?: NoteEntry[];
 };
 export type Wishlist = { version: number; groups: WishlistGroup[]; items: WishlistItem[] };
 export type Rate = { rate: number; date: string };
@@ -64,6 +73,17 @@ export function validateWishlist(value: unknown): Wishlist {
     if (price != null && (!Number.isFinite(price) || price < 0)) throw new Error(`Item "${item.name}" has an invalid EUR price.`);
     const quantity = item.quantity == null ? 1 : Number(item.quantity);
     if (!Number.isSafeInteger(quantity) || quantity < 1) throw new Error(`Item "${item.name}" has an invalid quantity.`);
+    const targetPrice = item.targetPrice == null ? null : Number(item.targetPrice);
+    if (targetPrice != null && (!Number.isFinite(targetPrice) || targetPrice < 0)) throw new Error(`Item "${item.name}" has an invalid target price.`);
+    const imageUrl = item.imageUrl?.trim() ? safeLink(item.imageUrl) || "" : "";
+    const purchaseDate = item.purchaseDate?.trim() || undefined;
+    const purchasedFrom = item.purchasedFrom?.trim() || undefined;
+    const priceHistory = Array.isArray(item.priceHistory) 
+      ? item.priceHistory.filter((entry: any) => entry && typeof entry.price === 'number' && Number.isFinite(entry.price) && entry.price >= 0 && typeof entry.date === 'number').map((entry: any) => ({ price: entry.price, date: entry.date }))
+      : undefined;
+    const notesJournal = Array.isArray(item.notesJournal)
+      ? item.notesJournal.filter((entry: any) => entry && typeof entry.text === 'string' && entry.text.trim() && typeof entry.date === 'number').map((entry: any) => ({ text: entry.text.trim(), date: entry.date }))
+      : undefined;
     return {
       ...item,
       id: item.id,
@@ -72,6 +92,13 @@ export function validateWishlist(value: unknown): Wishlist {
       quantity,
       priceEur: price,
       link: safeLink(item.link),
+      imageUrl: imageUrl || undefined,
+      targetPrice: targetPrice,
+      createdAt: item.createdAt != null ? Number(item.createdAt) : Date.now(),
+      purchaseDate,
+      purchasedFrom,
+      priceHistory,
+      notesJournal,
     };
   });
   const itemIds = new Set<string>();

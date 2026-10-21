@@ -13,13 +13,32 @@ Troved is a wishlist that runs in your browser. Your wishlist stays in your brow
 - Nested collections for organizing wishlist items
 - EUR estimates per item, with totals and optional daily reference rates from [Frankfurter](https://www.frankfurter.dev/)
 - Search and filter across your whole list
+- Status tracking per item (Wanted, Researching, Planned, Purchased) with status-based filtering
 - Local import of `.md`, `.markdown`, and `.csv` files (headings, list entries, Markdown tables, and wishlist CSV columns), with review before anything is imported
+- Export wishlist as CSV for use in spreadsheets
 - Optional AI-assisted Markdown organization (OpenAI, Anthropic, Google Gemini, or Ollama)
 - Folder autosave to a `wishlist.json` file, JSON download/restore, and ZIP backup
+- Bulk actions: multi-select items to change status, move between groups, or remove in one step
+- Side-by-side comparison view for selected items
 - Light and dark themes, applied before first paint so dark-mode users see no light flash
 - Fonts bundled via Fontsource (DM Sans, Manrope); no webfont CDN is contacted
 - Keyboard navigation, dialog focus trapping, and reduced-motion support
 - Tags and priority rating per item for cross-cutting organization
+- Drag and drop: reorder items by dragging them onto other items, move items between groups by dropping them on a group in the sidebar, and nest groups by dragging one group onto another — works on touch devices too
+- PWA support: install as a standalone app with offline access
+- Sort options: sort by recently added, date added, name, lowest/highest price, priority, or status
+- Price alerts: set a target price per item and receive a visual "Deal!" badge when the current price drops to or below your target
+- Item images: attach a product image URL to any item, displayed as a thumbnail on the card
+- Tag filtering: filter items by tags with one-click tag chips showing item counts
+- Shopping list mode: switch to a compact checklist view showing only purchased items, optimized for in-store use
+- Dark mode schedule: auto-switch between light and dark themes based on time of day or system preference
+- Wishlist sharing: generate a shareable link with your wishlist data encoded in the URL, or download as JSON
+- Budget tracking: set a monthly budget and track spending against it with a visual progress bar
+- Statistics dashboard: view SVG charts showing spending by group and items by status
+- PDF export: export your wishlist as a printable PDF using the browser's print function
+- Purchase history: record purchase date and store for purchased items
+- Item notes journal: append dated notes to items over time for tracking research and decisions
+- Price history: track price changes over time with sparkline charts on item cards
 
 ## Keyboard shortcuts
 
@@ -42,6 +61,7 @@ Shortcut hints appear when you hover or focus the search field and the quick-add
 | Local AI (optional) | Ollama HTTP API, called from the browser |
 | Exchange rates (optional) | Frankfurter reference rates |
 | Server tests | `npm test` in `server/` (6 passing) |
+| Frontend tests | `npm test` in `frontend/` (27 passing) |
 | Deployment | Docker image / Docker Compose |
 
 ```mermaid

@@ -5,7 +5,7 @@ import {
   Moon, MoreHorizontal, Pencil, Plus, Search, Settings2, ShieldCheck,
   ShoppingBag, Sparkles, Sun, Trash2, Undo2, X,
 } from "lucide-react";
-import { ItemDialog, GroupDialog, ImportDialog, SettingsDialog, SettingsError, SettingsSection } from "./Dialogs";
+import { DialogFrame, ItemDialog, GroupDialog, ImportDialog, ModalHeading, SettingsDialog, SettingsError, SettingsSection } from "./Dialogs";
 import { fetchOllamaModels, improveMarkdownImport, normalizeOllamaUrl, type OllamaModel } from "./ollama";
 import { fetchCloudModels, fetchCloudProviders, improveWithCloudModel, fetchSaveStatus, saveWishlistToServer, type CloudAiProvider } from "./cloudAi";
 import { loadDirectoryHandle, pickWishlistDirectory, readWishlistFile, removeDirectoryHandle, saveDirectoryHandle, supportsDirectoryPicker, type WishrDirectoryHandle, writeWishlistFile } from "./folderStorage";
@@ -21,8 +21,10 @@ const FALLBACK_CURRENCIES: ExchangeCurrency[] = [
   { iso_code: "PLN", name: "Polish Zloty", symbol: "zł" }, { iso_code: "JPY", name: "Japanese Yen", symbol: "¥" },
 ];
 type SaveState = "loading" | "local" | "saving" | "saved" | "error";
-type Filter = "all" | "priced" | "unpriced" | "priority";
-type Sort = "recent" | "name" | "price";
+type Filter = "all" | "priced" | "unpriced" | "priority" | "status";
+type ItemStatus = "wanted" | "researching" | "planned" | "purchased";
+type StatusFilter = "all" | ItemStatus;
+type Sort = "recent" | "name" | "price" | "price-desc" | "priority" | "status" | "date-added";
 
 function loadCachedWishlist() {
   try {
@@ -69,7 +71,10 @@ function App() {
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const [filter, setFilter] = useState<Filter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sort, setSort] = useState<Sort>("recent");
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [comparisonMode, setComparisonMode] = useState(false);
   const [currency, setCurrency] = useState(() => localStorage.getItem("wishr-currency") || "EUR");
   const activeCurrencyRef = useRef(currency);
   const [currencies, setCurrencies] = useState(FALLBACK_CURRENCIES);
@@ -120,8 +125,33 @@ function App() {
   const [serverSaveMessage, setServerSaveMessage] = useState("");
   const [toast, setToast] = useState<{ message: string; undo?: () => void } | null>(null);
   const [itemsToShow, setItemsToShow] = useState(30);
+  const [shoppingListMode, setShoppingListMode] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [themeSchedule, setThemeSchedule] = useState<"manual" | "auto" | "morning-light-night-dark">(() => {
+    try { return (localStorage.getItem("wishr-theme-schedule") as "manual" | "auto" | "morning-light-night-dark") || "manual"; } catch { return "manual"; }
+  });
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [monthlyBudget, setMonthlyBudget] = useState<number | null>(() => {
+    try {
+      const stored = localStorage.getItem("wishr-monthly-budget");
+      return stored ? Number(stored) : null;
+    } catch { return null; }
+  });
+  const [statsOpen, setStatsOpen] = useState(false);
+  const [dragItem, setDragItem] = useState<string | null>(null);
+  const [dragOverItem, setDragOverItem] = useState<string | null>(null);
+  const [dragGroup, setDragGroup] = useState<string | null>(null);
+  const [dragOverGroup, setDragOverGroup] = useState<string | null>(null);
+  const [touchDragItem, setTouchDragItem] = useState<string | null>(null);
+  const [touchDragOverItem, setTouchDragOverItem] = useState<string | null>(null);
+  const [touchDragGroup, setTouchDragGroup] = useState<string | null>(null);
+  const [touchDragOverGroup, setTouchDragOverGroup] = useState<string | null>(null);
   const actionRevisionRef = useRef(0);
   const toastTimerRef = useRef<number | null>(null);
+  const touchCloneRef = useRef<HTMLElement | null>(null);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const touchDragType = useRef<'item' | 'group' | null>(null);
+  const touchDragId = useRef<string | null>(null);
 
   const clearToast = useCallback(() => {
     if (toastTimerRef.current != null) window.clearTimeout(toastTimerRef.current);
@@ -299,7 +329,7 @@ function App() {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = (event: MediaQueryListEvent) => {
       try {
-        if (localStorage.getItem("wishr-theme")) return;
+        if (localStorage.getItem("wishr-theme") || themeSchedule !== "manual") return;
       } catch {
         // Without storage there is no saved preference to respect; follow the OS.
       }
@@ -307,7 +337,26 @@ function App() {
     };
     media.addEventListener("change", onChange);
     return () => media.removeEventListener("change", onChange);
-  }, []);
+  }, [themeSchedule]);
+
+  // Dark mode schedule: auto-switch based on time of day
+  useEffect(() => {
+    if (themeSchedule === "manual") return;
+    const updateThemeByTime = () => {
+      const hour = new Date().getHours();
+      let desired: "light" | "dark";
+      if (themeSchedule === "auto") {
+        desired = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      } else {
+        // morning-light-night-dark: light 6-18, dark 18-6
+        desired = (hour >= 6 && hour < 18) ? "light" : "dark";
+      }
+      setTheme(desired);
+    };
+    updateThemeByTime();
+    const interval = setInterval(updateThemeByTime, 60000); // check every minute
+    return () => clearInterval(interval);
+  }, [themeSchedule]);
 
   useEffect(() => {
     if (!("IntersectionObserver" in window) || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -721,22 +770,48 @@ function App() {
     const query = deferredSearch.trim().toLocaleLowerCase();
     const items = groupItems.filter((item) => {
       const matchesText = !query || (searchIndex.get(item.id) || "").includes(query);
+      const matchesTag = !selectedTag || (item.tags || []).includes(selectedTag);
+      const matchesShoppingList = !shoppingListMode || (item.status || "wanted") === "purchased";
       const matchesFilter = filter === "all" ||
         (filter === "priced" && item.priceEur != null && !item.currencyUnverified) ||
         (filter === "unpriced" && (item.priceEur == null || item.currencyUnverified)) ||
-        (filter === "priority" && Boolean(item.priority && ["high", "urgent"].includes(item.priority.toLowerCase())));
-      return matchesText && matchesFilter;
+        (filter === "priority" && Boolean(item.priority && ["high", "urgent"].includes(item.priority.toLowerCase()))) ||
+        (filter === "status" && statusFilter !== "all" && (item.status || "wanted") === statusFilter);
+      return matchesText && matchesTag && matchesShoppingList && matchesFilter;
     });
+    const priorityOrder = { high: 0, urgent: 0, medium: 1, low: 2 };
+    const statusOrder = { wanted: 0, researching: 1, planned: 2, purchased: 3 };
     if (sort === "name") items.sort((a, b) => a.name.localeCompare(b.name));
-    if (sort === "price") items.sort((a, b) => (a.priceEur ?? Number.POSITIVE_INFINITY) - (b.priceEur ?? Number.POSITIVE_INFINITY));
+    else if (sort === "price") items.sort((a, b) => (a.priceEur ?? Number.POSITIVE_INFINITY) - (b.priceEur ?? Number.POSITIVE_INFINITY));
+    else if (sort === "price-desc") items.sort((a, b) => (b.priceEur ?? 0) - (a.priceEur ?? 0));
+    else if (sort === "priority") items.sort((a, b) => {
+      const pa = a.priority ? (priorityOrder[a.priority.toLowerCase() as keyof typeof priorityOrder] ?? 3) : 3;
+      const pb = b.priority ? (priorityOrder[b.priority.toLowerCase() as keyof typeof priorityOrder] ?? 3) : 3;
+      return pa - pb;
+    });
+    else if (sort === "status") items.sort((a, b) => {
+      const sa = (a.status || "wanted") in statusOrder ? statusOrder[(a.status || "wanted") as keyof typeof statusOrder] : 4;
+      const sb = (b.status || "wanted") in statusOrder ? statusOrder[(b.status || "wanted") as keyof typeof statusOrder] : 4;
+      return sa - sb;
+    });
+    else if (sort === "date-added") items.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
     return items;
-  }, [deferredSearch, filter, groupItems, searchIndex, sort]);
+  }, [deferredSearch, filter, statusFilter, groupItems, searchIndex, sort, selectedTag, shoppingListMode]);
   const totalEur = useMemo(() => verifiedEuroTotal(wishlist.items), [wishlist.items]);
   const visibleItems = filteredItems.slice(0, itemsToShow);
   const displayMoney = (eur: number) => currency === "EUR" || !rate?.rate
     ? formatMoney(eur, "EUR")
     : formatMoney(eur * rate.rate, currency);
   const verifiedCount = useMemo(() => wishlist.items.filter((item) => item.priceEur != null && !item.currencyUnverified).length, [wishlist.items]);
+  const uniqueTags = useMemo(() => {
+    const tagMap = new Map<string, number>();
+    for (const item of wishlist.items) {
+      for (const tag of item.tags || []) {
+        tagMap.set(tag, (tagMap.get(tag) || 0) + 1);
+      }
+    }
+    return [...tagMap.entries()].sort((a, b) => b[1] - a[1]);
+  }, [wishlist.items]);
   const saveLabel = saveState === "saved" ? "Saved to folder" : saveState === "saving" || saveState === "loading" ? "Saving…" : saveState === "error" ? "Needs attention" : "Saved in browser";
   const activeCloudProvider = cloudProviders.find((provider) => provider.id === activeAiProvider && provider.configured);
   const activeAiModel = activeAiProvider === "ollama" ? ollamaConfig.model : activeAiProvider === cloudProviderId ? cloudModelId : "";
@@ -807,6 +882,522 @@ function App() {
     }, `${group.name} and its contents removed.`);
     setSelectedGroup("all");
   };
+
+  // Bulk actions
+  const toggleSelectItem = (itemId: string) => {
+    setSelectedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  };
+
+  const selectAllItems = () => {
+    if (selectedItems.size === filteredItems.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(filteredItems.map((item) => item.id)));
+    }
+  };
+
+  const bulkRemove = () => {
+    if (selectedItems.size === 0) return;
+    if (!window.confirm(`Remove ${selectedItems.size} selected item(s)?`)) return;
+    const remaining = wishlist.items.filter((item) => !selectedItems.has(item.id));
+    commitWishlist({ ...wishlist, items: remaining }, `${selectedItems.size} item(s) removed.`);
+    setSelectedItems(new Set());
+  };
+
+  const bulkSetStatus = (status: ItemStatus) => {
+    if (selectedItems.size === 0) return;
+    const updated = wishlist.items.map((item) =>
+      selectedItems.has(item.id) ? { ...item, status } : item
+    );
+    commitWishlist({ ...wishlist, items: updated }, `Status updated for ${selectedItems.size} item(s).`);
+    setSelectedItems(new Set());
+  };
+
+  const bulkMoveToGroup = (groupId: string) => {
+    if (selectedItems.size === 0) return;
+    const updated = wishlist.items.map((item) =>
+      selectedItems.has(item.id) ? { ...item, groupId } : item
+    );
+    const targetGroup = wishlist.groups.find((g) => g.id === groupId);
+    commitWishlist({ ...wishlist, items: updated }, `Moved ${selectedItems.size} item(s) to ${targetGroup?.name || "group"}.`);
+    setSelectedItems(new Set());
+  };
+
+  // CSV Export
+  const exportCsv = () => {
+    const headers = ["Name", "Group", "Subgroup", "Brand/Model", "Quantity", "Price (EUR)", "Status", "Priority", "Tags", "Link", "Notes"];
+    const rows = wishlist.items.map((item) => {
+      const group = wishlist.groups.find((g) => g.id === item.groupId);
+      return [
+        `"${(item.name || "").replace(/"/g, '""')}"`,
+        `"${(group?.name || "").replace(/"/g, '""')}"`,
+        `"${(item.subgroup || "").replace(/"/g, '""')}"`,
+        `"${(item.brandModel || "").replace(/"/g, '""')}"`,
+        item.quantity || 1,
+        item.priceEur != null ? item.priceEur : "",
+        `"${(item.status || "wanted").replace(/"/g, '""')}"`,
+        `"${(item.priority || "").replace(/"/g, '""')}"`,
+        `"${(item.tags?.join(", ") || "").replace(/"/g, '""')}"`,
+        `"${(item.link || "").replace(/"/g, '""')}"`,
+        `"${(item.notes || "").replace(/"/g, '""')}"`,
+      ].join(",");
+    });
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "troved-wishlist.csv";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  // Comparison items
+  const comparisonItems = useMemo(
+    () => wishlist.items.filter((item) => selectedItems.has(item.id)).slice(0, 6),
+    [wishlist.items, selectedItems]
+  );
+
+  // Drag and drop for items
+  const handleItemDragStart = (e: React.DragEvent, itemId: string) => {
+    e.dataTransfer.setData("text/plain", itemId);
+    e.dataTransfer.effectAllowed = "move";
+    setDragItem(itemId);
+  };
+
+  const handleItemDragEnd = () => {
+    setDragItem(null);
+    setDragOverItem(null);
+  };
+
+  const handleItemDragOver = (e: React.DragEvent, itemId: string) => {
+    if (!dragItem || dragItem === itemId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverItem(itemId);
+  };
+
+  const handleItemDragLeave = () => {
+    setDragOverItem(null);
+  };
+
+  const handleItemDrop = (e: React.DragEvent, targetItemId: string) => {
+    e.preventDefault();
+    const sourceId = e.dataTransfer.getData("text/plain");
+    const groupData = e.dataTransfer.getData("application/x-troved-group");
+    if (groupData) {
+      // A group was dropped on an item — move the item to that group
+      handleGroupItemDrop(groupData, targetItemId);
+      return;
+    }
+    if (!sourceId || sourceId === targetItemId) {
+      setDragItem(null);
+      setDragOverItem(null);
+      return;
+    }
+    // Reorder items: move source item to target item's position
+    const items = [...wishlist.items];
+    const sourceIndex = items.findIndex((item) => item.id === sourceId);
+    if (sourceIndex === -1) {
+      setDragItem(null);
+      setDragOverItem(null);
+      return;
+    }
+    const [movedItem] = items.splice(sourceIndex, 1);
+    const targetIndex = items.findIndex((item) => item.id === targetItemId);
+    if (targetIndex === -1) {
+      items.splice(sourceIndex, 0, movedItem);
+      setDragItem(null);
+      setDragOverItem(null);
+      return;
+    }
+    items.splice(targetIndex, 0, movedItem);
+    commitWishlist({ ...wishlist, items });
+    setDragItem(null);
+    setDragOverItem(null);
+  };
+
+  // Handle dropping an item onto a group in the sidebar
+  const handleGroupItemDrop = (groupId: string, _targetItemId: string) => {
+    const draggedItem = wishlist.items.find((item) => item.id === dragItem);
+    if (!draggedItem || draggedItem.groupId === groupId) {
+      setDragItem(null);
+      setDragOverGroup(null);
+      return;
+    }
+    const updated = wishlist.items.map((item) =>
+      item.id === draggedItem.id ? { ...item, groupId: groupId } : item
+    );
+    const targetGroup = wishlist.groups.find((g) => g.id === groupId);
+    commitWishlist({ ...wishlist, items: updated }, `Moved ${draggedItem.name} to ${targetGroup?.name || "group"}.`);
+    setDragItem(null);
+    setDragOverGroup(null);
+  };
+
+  // Drag and drop for groups
+  const handleGroupDragStart = (e: React.DragEvent, groupId: string) => {
+    e.dataTransfer.setData("application/x-troved-group", groupId);
+    e.dataTransfer.effectAllowed = "move";
+    setDragGroup(groupId);
+  };
+
+  const handleGroupDragEnd = () => {
+    setDragGroup(null);
+    setDragOverGroup(null);
+  };
+
+  const handleGroupDragOver = (e: React.DragEvent, groupId: string) => {
+    if (!dragGroup || dragGroup === groupId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverGroup(groupId);
+  };
+
+  const handleGroupDragLeave = () => {
+    setDragOverGroup(null);
+  };
+
+  const handleGroupDrop = (e: React.DragEvent, targetGroupId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const sourceId = e.dataTransfer.getData("application/x-troved-group");
+    if (!sourceId || sourceId === targetGroupId) {
+      setDragGroup(null);
+      setDragOverGroup(null);
+      return;
+    }
+    // Check if target is a descendant of source (would create cycle)
+    const isDescendant = (groupId: string, ancestorId: string): boolean => {
+      const group = wishlist.groups.find((g) => g.id === groupId);
+      if (!group || !group.parentId) return false;
+      if (group.parentId === ancestorId) return true;
+      return isDescendant(group.parentId, ancestorId);
+    };
+    if (isDescendant(targetGroupId, sourceId)) {
+      setDragGroup(null);
+      setDragOverGroup(null);
+      return;
+    }
+    // Reorder: move source group to be a child of target group
+    const groups = wishlist.groups.map((g) =>
+      g.id === sourceId ? { ...g, parentId: targetGroupId } : g
+    );
+    const sourceGroup = wishlist.groups.find((g) => g.id === sourceId);
+    const targetGroup = wishlist.groups.find((g) => g.id === targetGroupId);
+    commitWishlist({ ...wishlist, groups }, `Moved ${sourceGroup?.name || "group"} into ${targetGroup?.name || "group"}.`);
+    setDragGroup(null);
+    setDragOverGroup(null);
+  };
+
+  // Touch drag support for mobile devices
+  // Unified drop logic reused by both mouse and touch
+  const executeItemReorder = (sourceId: string, targetId: string) => {
+    if (!sourceId || sourceId === targetId) return;
+    const items = [...wishlist.items];
+    const sourceIndex = items.findIndex((item) => item.id === sourceId);
+    if (sourceIndex === -1) return;
+    const [movedItem] = items.splice(sourceIndex, 1);
+    const targetIndex = items.findIndex((item) => item.id === targetId);
+    if (targetIndex === -1) {
+      items.splice(sourceIndex, 0, movedItem);
+    } else {
+      items.splice(targetIndex, 0, movedItem);
+    }
+    commitWishlist({ ...wishlist, items });
+  };
+
+  const executeGroupNest = (sourceId: string, targetId: string) => {
+    if (!sourceId || sourceId === targetId) return;
+    const isDescendant = (groupId: string, ancestorId: string): boolean => {
+      const group = wishlist.groups.find((g) => g.id === groupId);
+      if (!group || !group.parentId) return false;
+      if (group.parentId === ancestorId) return true;
+      return isDescendant(group.parentId, ancestorId);
+    };
+    if (isDescendant(targetId, sourceId)) return;
+    const groups = wishlist.groups.map((g) =>
+      g.id === sourceId ? { ...g, parentId: targetId } : g
+    );
+    const sourceGroup = wishlist.groups.find((g) => g.id === sourceId);
+    const targetGroup = wishlist.groups.find((g) => g.id === targetId);
+    commitWishlist({ ...wishlist, groups }, `Moved ${sourceGroup?.name || "group"} into ${targetGroup?.name || "group"}.`);
+  };
+
+  const executeMoveItemToGroup = (itemId: string, groupId: string) => {
+    const item = wishlist.items.find((it) => it.id === itemId);
+    if (!item || item.groupId === groupId) return;
+    const updated = wishlist.items.map((it) =>
+      it.id === itemId ? { ...it, groupId: groupId } : it
+    );
+    const targetGroup = wishlist.groups.find((g) => g.id === groupId);
+    commitWishlist({ ...wishlist, items: updated }, `Moved ${item.name} to ${targetGroup?.name || "group"}.`);
+  };
+
+  const removeTouchClone = () => {
+    if (touchCloneRef.current) {
+      touchCloneRef.current.remove();
+      touchCloneRef.current = null;
+    }
+  };
+
+  const createTouchClone = (sourceEl: HTMLElement) => {
+    removeTouchClone();
+    const rect = sourceEl.getBoundingClientRect();
+    const clone = sourceEl.cloneNode(true) as HTMLElement;
+    clone.className = clone.className + " touch-clone";
+    clone.style.position = "fixed";
+    clone.style.top = rect.top + "px";
+    clone.style.left = rect.left + "px";
+    clone.style.width = rect.width + "px";
+    clone.style.height = rect.height + "px";
+    clone.style.zIndex = "10000";
+    clone.style.pointerEvents = "none";
+    clone.style.opacity = "0.85";
+    clone.style.transform = "scale(1.03)";
+    clone.style.boxShadow = "0 8px 24px rgba(0,0,0,0.2)";
+    clone.style.transition = "none";
+    document.body.appendChild(clone);
+    touchCloneRef.current = clone;
+  };
+
+  const handleTouchStart = (e: React.TouchEvent, type: 'item' | 'group', id: string) => {
+    // Only handle long-press drag, not quick taps
+    touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    touchDragType.current = type;
+    touchDragId.current = id;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchDragType.current || !touchDragId.current || !touchStartPos.current) return;
+
+    const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - touchStartPos.current.x);
+    const dy = Math.abs(touch.clientY - touchStartPos.current.y);
+
+    // Minimum drag distance to trigger (avoid scroll interference)
+    if (dx < 10 && dy < 10) return;
+
+    // Prevent scrolling during drag
+    e.preventDefault();
+
+    // Create clone on first significant move
+    if (!touchCloneRef.current) {
+      const sourceEl = document.querySelector(`[data-touch-id="${touchDragId.current}"]`) as HTMLElement | null;
+      if (sourceEl) {
+        createTouchClone(sourceEl);
+        // Mark original as dragging
+        if (touchDragType.current === 'item') {
+          setDragItem(touchDragId.current);
+          setTouchDragItem(touchDragId.current);
+        } else {
+          setDragGroup(touchDragId.current);
+          setTouchDragGroup(touchDragId.current);
+        }
+      }
+    }
+
+    // Update clone position
+    if (touchCloneRef.current) {
+      touchCloneRef.current.style.left = (touch.clientX - 40) + "px";
+      touchCloneRef.current.style.top = (touch.clientY - 30) + "px";
+    }
+
+    // Find drop target using elementFromPoint
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!target) return;
+
+    // Hide the clone from elementFromPoint
+    if (touchCloneRef.current) {
+      touchCloneRef.current.style.display = "none";
+    }
+    const realTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (touchCloneRef.current) {
+      touchCloneRef.current.style.display = "";
+    }
+
+    if (!realTarget) return;
+
+    // Find item card or group under the touch point
+    const itemCard = realTarget.closest('.item-card');
+    const navGroup = realTarget.closest('.nav-group');
+
+    if (touchDragType.current === 'item') {
+      if (itemCard && itemCard !== realTarget.closest(`[data-touch-id="${touchDragId.current}"]`)) {
+        const dataId = itemCard.getAttribute('data-touch-id');
+        if (dataId && dataId !== touchDragId.current) {
+          setTouchDragOverItem(dataId);
+          setDragOverItem(dataId);
+        }
+      } else if (navGroup) {
+        const groupId = navGroup.getAttribute('data-touch-id');
+        if (groupId) {
+          setTouchDragOverItem(null);
+          setDragOverItem(null);
+          setTouchDragOverGroup(groupId);
+          setDragOverGroup(groupId);
+        }
+      } else {
+        setTouchDragOverItem(null);
+        setDragOverItem(null);
+        setTouchDragOverGroup(null);
+        setDragOverGroup(null);
+      }
+    } else if (touchDragType.current === 'group') {
+      if (navGroup) {
+        const groupId = navGroup.getAttribute('data-touch-id');
+        if (groupId && groupId !== touchDragId.current) {
+          setTouchDragOverGroup(groupId);
+          setDragOverGroup(groupId);
+        }
+      } else {
+        setTouchDragOverGroup(null);
+        setDragOverGroup(null);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchDragType.current || !touchDragId.current) {
+      removeTouchClone();
+      return;
+    }
+
+    const type = touchDragType.current;
+    const id = touchDragId.current;
+
+    if (type === 'item') {
+      // Drop item
+      if (touchDragOverGroup) {
+        // Dropped on a group
+        executeMoveItemToGroup(id, touchDragOverGroup);
+      } else if (touchDragOverItem && touchDragOverItem !== id) {
+        // Dropped on another item
+        executeItemReorder(id, touchDragOverItem);
+      }
+      setDragItem(null);
+      setDragOverItem(null);
+      setTouchDragItem(null);
+      setTouchDragOverItem(null);
+      setTouchDragOverGroup(null);
+      setDragOverGroup(null);
+    } else if (type === 'group') {
+      // Drop group
+      if (touchDragOverGroup && touchDragOverGroup !== id) {
+        executeGroupNest(id, touchDragOverGroup);
+      }
+      setDragGroup(null);
+      setDragOverGroup(null);
+      setTouchDragGroup(null);
+      setTouchDragOverGroup(null);
+    }
+
+    removeTouchClone();
+    touchDragType.current = null;
+    touchDragId.current = null;
+    touchStartPos.current = null;
+  };
+
+  // Global touch listeners for drag continuation
+  useEffect(() => {
+    const onTouchMove = (e: TouchEvent) => {
+      if (!touchDragType.current || !touchDragId.current || !touchStartPos.current) return;
+
+      const touch = e.touches[0];
+      const dx = Math.abs(touch.clientX - touchStartPos.current.x);
+      const dy = Math.abs(touch.clientY - touchStartPos.current.y);
+
+      if (dx < 10 && dy < 10) return;
+
+      e.preventDefault();
+
+      if (!touchCloneRef.current) {
+        const sourceEl = document.querySelector(`[data-touch-id="${touchDragId.current}"]`) as HTMLElement | null;
+        if (sourceEl) {
+          createTouchClone(sourceEl);
+          if (touchDragType.current === 'item') {
+            setDragItem(touchDragId.current);
+            setTouchDragItem(touchDragId.current);
+          } else {
+            setDragGroup(touchDragId.current);
+            setTouchDragGroup(touchDragId.current);
+          }
+        }
+      }
+
+      if (touchCloneRef.current) {
+        touchCloneRef.current.style.left = (touch.clientX - 40) + "px";
+        touchCloneRef.current.style.top = (touch.clientY - 30) + "px";
+      }
+
+      if (touchCloneRef.current) {
+        touchCloneRef.current.style.display = "none";
+      }
+      const realTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (touchCloneRef.current) {
+        touchCloneRef.current.style.display = "";
+      }
+
+      if (!realTarget) return;
+
+      const itemCard = realTarget.closest('.item-card');
+      const navGroup = realTarget.closest('.nav-group');
+
+      if (touchDragType.current === 'item') {
+        if (itemCard) {
+          const dataId = itemCard.getAttribute('data-touch-id');
+          if (dataId && dataId !== touchDragId.current) {
+            setTouchDragOverItem(dataId);
+            setDragOverItem(dataId);
+            setTouchDragOverGroup(null);
+            setDragOverGroup(null);
+          }
+        } else if (navGroup) {
+          const groupId = navGroup.getAttribute('data-touch-id');
+          if (groupId) {
+            setTouchDragOverItem(null);
+            setDragOverItem(null);
+            setTouchDragOverGroup(groupId);
+            setDragOverGroup(groupId);
+          }
+        } else {
+          setTouchDragOverItem(null);
+          setDragOverItem(null);
+          setTouchDragOverGroup(null);
+          setDragOverGroup(null);
+        }
+      } else if (touchDragType.current === 'group') {
+        if (navGroup) {
+          const groupId = navGroup.getAttribute('data-touch-id');
+          if (groupId && groupId !== touchDragId.current) {
+            setTouchDragOverGroup(groupId);
+            setDragOverGroup(groupId);
+          }
+        } else {
+          setTouchDragOverGroup(null);
+          setDragOverGroup(null);
+        }
+      }
+    };
+
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('touchcancel', handleTouchEnd);
+
+    return () => {
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchcancel', handleTouchEnd);
+      removeTouchClone();
+    };
+  }, [touchDragType.current, touchDragId.current, touchStartPos.current, touchDragOverItem, touchDragOverGroup, wishlist]);
 
   const addFiles = async (files: FileList | null) => {
     if (!files?.length) return;
@@ -901,8 +1492,37 @@ function App() {
     .map((group) => {
       const stats = groupStats.get(group.id) || { count: 0, total: 0 };
       const childGroups = wishlist.groups.some((entry) => entry.parentId === group.id);
+      const isDragging = dragGroup === group.id || touchDragGroup === group.id;
+      const isDragOver = dragOverGroup === group.id && dragGroup !== group.id && touchDragOverGroup !== group.id;
       return (
-        <div className={`nav-group ${selectedGroup === group.id ? "active" : ""}`} key={group.id} style={{ "--depth": depth } as React.CSSProperties}>
+        <div className={`nav-group ${selectedGroup === group.id ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDragOver ? "drag-over" : ""}`}
+          key={group.id}
+          data-touch-id={group.id}
+          style={{ "--depth": depth } as React.CSSProperties}
+          draggable
+          onDragStart={(e) => handleGroupDragStart(e, group.id)}
+          onDragEnd={handleGroupDragEnd}
+          onTouchStart={(e) => handleTouchStart(e, 'group', group.id)}
+          onDragOver={(e) => {
+            if (dragGroup) {
+              handleGroupDragOver(e, group.id);
+            } else if (dragItem) {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              setDragOverGroup(group.id);
+            }
+          }}
+          onDragLeave={handleGroupDragLeave}
+          onDrop={(e) => {
+            const groupData = e.dataTransfer.getData("application/x-troved-group");
+            if (groupData) {
+              handleGroupDrop(e, group.id);
+            } else {
+              // An item was dropped on a group — move the item to this group
+              e.preventDefault();
+              handleGroupItemDrop(group.id, "");
+            }
+          }}>
           <button className="group-link" onClick={() => { setSelectedGroup(group.id); setCollectionsOpen(false); }} title={`${group.name} · ${stats.count} ${stats.count === 1 ? "idea" : "ideas"} · ${displayMoney(stats.total)} estimated total`}>
             <span className="group-glyph"><span /></span><span className="group-link-name">{group.name}</span><small key={stats.count}>{stats.count}</small>
           </button>
@@ -987,7 +1607,7 @@ function App() {
             </div>
           </section>
 
-          <section className="wishlist-section" aria-labelledby="list-title">
+          <section className={`wishlist-section ${shoppingListMode ? "shopping-list-mode" : ""}`} aria-labelledby="list-title">
             <div className="section-top" data-reveal>
               <div><span className="eyebrow small-eyebrow">IDEAS</span><h2 id="list-title">{selectedGroupData ? "In this collection" : "Your saved ideas"} <span>{filteredItems.length}</span></h2><p>{selectedGroupData ? "Items in this collection." : "Saved items across all collections."}</p></div>
               <button className="outline-add" onClick={addNewItem} disabled={!wishlist.groups.length || Boolean(cacheIssue)}><Plus size={16} /> Add idea</button>
@@ -995,9 +1615,31 @@ function App() {
 
             {(wishlist.items.length > 0 || search) && <div className="list-controls">
               <div className="filters" role="group" aria-label="Filter wishlist">
-                {([["all", "Everything"], ["priced", "With a price"], ["unpriced", "No price"], ["priority", "High priority"]] as const).map(([value, label]) => <button key={value} className={`filter-chip ${filter === value ? "active" : ""}`} onClick={() => setFilter(value)} aria-pressed={filter === value}>{label}</button>)}
+                {([["all", "Everything"], ["priced", "With a price"], ["unpriced", "No price"], ["priority", "High priority"], ["status", "By status"]] as const).map(([value, label]) => <button key={value} className={`filter-chip ${filter === value ? "active" : ""}`} onClick={() => { setFilter(value); if (value !== "status") setStatusFilter("all"); }} aria-pressed={filter === value}>{label}</button>)}
+                <button className={`filter-chip ${shoppingListMode ? "active" : ""}`} onClick={() => { setShoppingListMode(!shoppingListMode); if (shoppingListMode) { setStatusFilter("all"); setFilter("all"); } else { setStatusFilter("purchased"); setFilter("status"); } }} aria-pressed={shoppingListMode} title="Show only purchased items in a compact checklist">{shoppingListMode ? "📋 Shopping" : "🛒 Shopping list"}</button>
+                <button className={`filter-chip ${statsOpen ? "active" : ""}`} onClick={() => setStatsOpen(true)} aria-pressed={statsOpen}>📊 Stats</button>
+                <button className={`filter-chip ${shareOpen ? "active" : ""}`} onClick={() => setShareOpen(true)} aria-pressed={shareOpen}>🔗 Share</button>
               </div>
-              <label className="sort-control"><ArrowDown size={14} /><select value={sort} onChange={(event) => setSort(event.target.value as Sort)} aria-label="Sort wishlist"><option value="recent">Recently added</option><option value="name">Name A–Z</option><option value="price">Lowest price</option></select></label>
+              {uniqueTags.length > 0 && <div className="tag-filter-list" role="group" aria-label="Filter by tag">
+                <button className={`tag-filter-chip ${!selectedTag ? "active" : ""}`} onClick={() => setSelectedTag(null)}>All</button>
+                {uniqueTags.map(([tag, count]) => <button key={tag} className={`tag-filter-chip ${selectedTag === tag ? "active" : ""}`} onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}>{tag} <small>({count})</small></button>)}
+              </div>}
+              {filter === "status" && <div className="filters status-filters" role="group" aria-label="Filter by status">
+                {([["all", "All"], ["wanted", "Wanted"], ["researching", "Researching"], ["planned", "Planned"], ["purchased", "Purchased"]] as const).map(([value, label]) => <button key={value} className={`filter-chip ${statusFilter === value ? "active" : ""}`} onClick={() => setStatusFilter(value as StatusFilter)} aria-pressed={statusFilter === value}>{label}</button>)}
+              </div>}
+              <label className="sort-control"><ArrowDown size={14} /><select value={sort} onChange={(event) => setSort(event.target.value as Sort)} aria-label="Sort wishlist"><option value="recent">Recently added</option><option value="date-added">Date added</option><option value="name">Name A–Z</option><option value="price">Lowest price</option><option value="price-desc">Highest price</option><option value="priority">Priority</option><option value="status">Status</option></select></label>
+            </div>}
+            {selectedItems.size > 0 && <div className="bulk-bar" role="toolbar" aria-label="Bulk actions">
+              <span className="bulk-count">{selectedItems.size} selected</span>
+              <button className="secondary-btn bulk-btn" onClick={selectAllItems}>Select all</button>
+              <button className="secondary-btn bulk-btn" onClick={() => bulkSetStatus("wanted")}>Wanted</button>
+              <button className="secondary-btn bulk-btn" onClick={() => bulkSetStatus("researching")}>Researching</button>
+              <button className="secondary-btn bulk-btn" onClick={() => bulkSetStatus("planned")}>Planned</button>
+              <button className="secondary-btn bulk-btn" onClick={() => bulkSetStatus("purchased")}>Purchased</button>
+              {wishlist.groups.length > 1 && <details className="bulk-move"><summary>Move to…</summary><div className="group-menu">{wishlist.groups.map((group) => <button key={group.id} onClick={() => bulkMoveToGroup(group.id)}>{group.name}</button>)}</div></details>}
+              <button className="secondary-btn bulk-btn danger-text" onClick={bulkRemove}>Remove</button>
+              {selectedItems.size >= 2 && <button className="secondary-btn bulk-btn" onClick={() => setComparisonMode(true)}>Compare</button>}
+              <button className="text-button" onClick={() => setSelectedItems(new Set())}>Clear</button>
             </div>}
 
             {visibleItems.length > 0 ? <>
@@ -1005,8 +1647,24 @@ function App() {
                 {visibleItems.map((item, index) => {
                   const price = item.priceEur == null || item.currencyUnverified ? null : item.priceEur * (item.quantity || 1);
                   const converted = price == null ? null : (currency !== "EUR" && rate?.rate ? price * rate.rate : price);
-                  return <article className="item-card" data-reveal key={item.id} style={{ "--reveal-delay": `${Math.min(index * 65, 325)}ms` } as React.CSSProperties}>
-                    <div className="item-card-top"><span className={`item-symbol ${item.currencyUnverified ? "unverified" : ""}`}><ShoppingBag size={17} /></span><div className="item-badges">{item.priority && <span className={`priority-tag ${item.priority.toLowerCase()}`}>{item.priority}</span>}{item.tags?.length && item.tags.map((tag) => <span key={tag} className="tag-tag">{tag}</span>)}{item.status && item.status !== "wanted" && <span className="status-tag">{item.status}</span>}</div>
+                  const isSelected = selectedItems.has(item.id);
+                  const isDragging = dragItem === item.id || touchDragItem === item.id;
+                  const isDragOver = dragOverItem === item.id && dragItem !== item.id && touchDragOverItem !== item.id;
+                  const priceAlert = item.targetPrice != null && item.targetPrice > 0 && item.priceEur != null && !item.currencyUnverified && item.priceEur <= item.targetPrice;
+                  return <article className={`item-card ${isSelected ? "selected" : ""} ${isDragging ? "dragging" : ""} ${isDragOver ? "drag-over" : ""} ${priceAlert ? "price-alert" : ""}`}
+                    draggable
+                    data-touch-id={item.id}
+                    onDragStart={(e) => handleItemDragStart(e, item.id)}
+                    onDragEnd={handleItemDragEnd}
+                    onDragOver={(e) => handleItemDragOver(e, item.id)}
+                    onDragLeave={handleItemDragLeave}
+                    onDrop={(e) => handleItemDrop(e, item.id)}
+                    onTouchStart={(e) => handleTouchStart(e, 'item', item.id)}
+                    data-reveal key={item.id} style={{ "--reveal-delay": `${Math.min(index * 65, 325)}ms` } as React.CSSProperties}>
+                    {item.imageUrl && <div className="item-image"><img src={item.imageUrl} alt={item.name} loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>}
+                    <div className="item-card-top">
+                      <label className="item-checkbox"><input type="checkbox" checked={isSelected} onChange={() => toggleSelectItem(item.id)} /><span><Check size={12} /></span></label>
+                      <span className={`item-symbol ${item.currencyUnverified ? "unverified" : ""}`}><ShoppingBag size={17} /></span><div className="item-badges">{item.priority && <span className={`priority-tag ${item.priority.toLowerCase()}`}>{item.priority}</span>}{item.tags?.length && item.tags.map((tag) => <span key={tag} className="tag-tag">{tag}</span>)}{item.status && item.status !== "wanted" && <span className="status-tag">{item.status}</span>}{priceAlert && <span className="alert-tag" title={`Price ${formatMoney(item.priceEur ?? 0, "EUR")} is at or below your target ${formatMoney(item.targetPrice ?? 0, "EUR")}`}>🔔 Deal!</span>}</div>
                       <details className="item-more"><summary aria-label={`Actions for ${item.name}`}><MoreHorizontal size={17} /></summary><div className="group-menu"><button disabled={Boolean(cacheIssue)} onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); setItemEditor(item); }}><Pencil size={14} /> Edit idea</button><button disabled={Boolean(cacheIssue)} className="danger-text" onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); removeItem(item); }}><Trash2 size={14} /> Remove…</button></div></details>
                     </div>
                     <h3>{item.name}</h3>
@@ -1020,6 +1678,7 @@ function App() {
                           : item.priceEur == null
                             ? <><strong className="price-pending">Not priced</strong><small>A wish, not a promise</small></>
                             : <><strong>{converted == null ? formatMoney(price!, "EUR") : formatMoney(converted, currency)}</strong><small>{currency === "EUR" ? "EUR estimate" : `from ${formatMoney(price!, "EUR")}`}</small></>}
+                        {item.targetPrice != null && item.targetPrice > 0 && <small className="target-price-note">Target: {formatMoney(item.targetPrice, "EUR")}</small>}
                       </div>
                     </div>
                     {safeLink(item.link) && <a className="item-link" href={safeLink(item.link)} target="_blank" rel="noreferrer"><Link2 size={13} /> Visit the link <ArrowUpRight size={13} /></a>}
@@ -1071,6 +1730,141 @@ function App() {
       {groupEditor !== undefined && <GroupDialog group={groupEditor} groups={wishlist.groups} initialParent={groupEditor === null && selectedGroup !== "all" ? selectedGroup : undefined} onClose={() => setGroupEditor(undefined)} onSave={saveGroup} />}
       {importResults && <ImportDialog results={importResults} error={importError} onToggle={toggleImport} onClose={() => { setImportResults(null); setImportFiles([]); setImportError(""); }} onImport={importSelected} onChooseMore={() => importInputRef.current?.click()} aiConnected={activeAiConnected} aiModel={activeAiModel} aiDestination={activeAiDestination} aiBusy={ollamaImportBusy} onImprove={() => void improveImports()} />}
 
+      {shareOpen && <DialogFrame className="share-dialog" labelledBy="share-title" onClose={() => setShareOpen(false)}>
+        <ModalHeading eyebrow="SHARE YOUR WISHLIST" title="Share with others" id="share-title" onClose={() => setShareOpen(false)} />
+        <p className="settings-copy">Generate a shareable link containing your wishlist data. Anyone with the link can view a read-only copy.</p>
+        <div className="share-section">
+          <label className="field"><span>Share link</span>
+            <input className="share-url" readOnly value={(() => {
+              try {
+                const data = btoa(JSON.stringify(wishlist));
+                return `${window.location.origin}${window.location.pathname}#share=${data}`;
+              } catch { return "Could not generate share link."; }
+            })()} onClick={(e) => (e.target as HTMLInputElement).select()} />
+          </label>
+          <div className="share-actions">
+            <button className="secondary-btn" onClick={() => {
+              navigator.clipboard?.writeText((document.querySelector('.share-url') as HTMLInputElement)?.value || '');
+              setNotice("Share link copied to clipboard.");
+            }}>📋 Copy link</button>
+            <button className="secondary-btn" onClick={() => {
+              const data = JSON.stringify(wishlist);
+              const blob = new Blob([data], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'troved-wishlist.json';
+              a.click();
+              URL.revokeObjectURL(url);
+            }}>📁 Download JSON</button>
+          </div>
+        </div>
+        <div className="modal-actions"><button type="button" className="text-button" onClick={() => setShareOpen(false)}>Close</button></div>
+      </DialogFrame>}
+      {comparisonMode && comparisonItems.length >= 2 && <DialogFrame className="comparison-dialog" labelledBy="comparison-title" onClose={() => setComparisonMode(false)}>
+        <ModalHeading eyebrow="SIDE BY SIDE" title={`Compare ${comparisonItems.length} items`} id="comparison-title" onClose={() => setComparisonMode(false)} />
+        <div className="comparison-table-wrapper">
+          <table className="comparison-table">
+            <thead>
+              <tr><th>Detail</th>{comparisonItems.map((item) => <th key={item.id} className="comparison-item-header"><strong>{item.name}</strong></th>)}</tr>
+            </thead>
+            <tbody>
+              <tr><td>Group</td>{comparisonItems.map((item) => { const g = wishlist.groups.find((gr) => gr.id === item.groupId); return <td key={item.id}>{g?.name || "—"}</td>; })}</tr>
+              <tr><td>Subgroup</td>{comparisonItems.map((item) => <td key={item.id}>{item.subgroup || "—"}</td>)}</tr>
+              <tr><td>Brand / Model</td>{comparisonItems.map((item) => <td key={item.id}>{item.brandModel || "—"}</td>)}</tr>
+              <tr><td>Quantity</td>{comparisonItems.map((item) => <td key={item.id}>{item.quantity || 1}</td>)}</tr>
+              <tr><td>Price (EUR)</td>{comparisonItems.map((item) => <td key={item.id}>{item.priceEur != null ? `${item.priceEur.toFixed(2)} €` : "Not priced"}</td>)}</tr>
+              <tr><td>Status</td>{comparisonItems.map((item) => <td key={item.id}>{item.status || "Wanted"}</td>)}</tr>
+              <tr><td>Priority</td>{comparisonItems.map((item) => <td key={item.id}>{item.priority || "—"}</td>)}</tr>
+              <tr><td>Tags</td>{comparisonItems.map((item) => <td key={item.id}>{item.tags?.length ? item.tags.join(", ") : "—"}</td>)}</tr>
+              <tr><td>Notes</td>{comparisonItems.map((item) => <td key={item.id} className="comparison-notes">{item.notes || "—"}</td>)}</tr>
+              <tr><td>Link</td>{comparisonItems.map((item) => <td key={item.id}>{item.link ? <a href={item.link} target="_blank" rel="noreferrer">Visit link</a> : "—"}</td>)}</tr>
+            </tbody>
+          </table>
+        </div>
+        <div className="modal-actions"><button type="button" className="text-button" onClick={() => setComparisonMode(false)}>Close</button></div>
+      </DialogFrame>}
+      {statsOpen && <DialogFrame className="stats-dialog" labelledBy="stats-title" onClose={() => setStatsOpen(false)}>
+        <ModalHeading eyebrow="INSIGHTS" title="Wishlist statistics" id="stats-title" onClose={() => setStatsOpen(false)} />
+        <div className="stats-grid">
+          <div className="stat-card"><div className="stat-label">Total items</div><div className="stat-value">{wishlist.items.length}</div></div>
+          <div className="stat-card"><div className="stat-label">Total value</div><div className="stat-value">{formatMoney(verifiedEuroTotal(wishlist.items), "EUR")}</div></div>
+          <div className="stat-card"><div className="stat-label">Purchased</div><div className="stat-value">{wishlist.items.filter(i => i.status === "purchased").length}</div></div>
+          <div className="stat-card"><div className="stat-label">Groups</div><div className="stat-value">{wishlist.groups.length}</div></div>
+        </div>
+        <div className="chart-container">
+          <div className="chart-title">Spending by group</div>
+          <svg className="chart-svg" viewBox="0 0 600 200">
+            {(() => {
+              const groupTotals = wishlist.groups.map(g => ({
+                name: g.name,
+                total: verifiedEuroTotal(wishlist.items.filter(i => i.groupId === g.id))
+              })).sort((a, b) => b.total - a.total).slice(0, 8);
+              if (groupTotals.length === 0) return <text x="300" y="100" textAnchor="middle" fill="var(--muted)">No data</text>;
+              const maxTotal = Math.max(...groupTotals.map(g => g.total), 1);
+              const barWidth = 50;
+              const gap = 20;
+              return groupTotals.map((g, i) => {
+                const barHeight = (g.total / maxTotal) * 160;
+                const x = 40 + i * (barWidth + gap);
+                const y = 180 - barHeight;
+                return (
+                  <g key={g.name}>
+                    <rect x={x} y={y} width={barWidth} height={barHeight} fill="var(--green)" rx="4" />
+                    <text x={x + barWidth / 2} y={y - 5} textAnchor="middle" fontSize="10" fill="var(--ink)">{g.total.toFixed(0)}€</text>
+                    <text x={x + barWidth / 2} y={195} textAnchor="middle" fontSize="9" fill="var(--muted)">{g.name.length > 8 ? g.name.slice(0, 8) + '…' : g.name}</text>
+                  </g>
+                );
+              });
+            })()}
+          </svg>
+        </div>
+        <div className="chart-container">
+          <div className="chart-title">Items by status</div>
+          <svg className="chart-svg" viewBox="0 0 600 200">
+            {(() => {
+              const statusCounts = [
+                { status: "Wanted", count: wishlist.items.filter(i => (i.status || "wanted") === "wanted").length, color: "var(--green)" },
+                { status: "Researching", count: wishlist.items.filter(i => i.status === "researching").length, color: "var(--warning)" },
+                { status: "Planned", count: wishlist.items.filter(i => i.status === "planned").length, color: "var(--line-strong)" },
+                { status: "Purchased", count: wishlist.items.filter(i => i.status === "purchased").length, color: "var(--faint)" }
+              ];
+              const totalCount = wishlist.items.length || 1;
+              let currentAngle = 0;
+              const cx = 150, cy = 100, r = 80;
+              const slices = statusCounts.filter(s => s.count > 0).map(s => {
+                const angle = (s.count / totalCount) * 2 * Math.PI;
+                const start = currentAngle;
+                currentAngle += angle;
+                return { ...s, start, angle };
+              });
+              if (slices.length === 0) return <text x="300" y="100" textAnchor="middle" fill="var(--muted)">No data</text>;
+              return (
+                <>
+                  {slices.map((s, i) => {
+                    const x1 = cx + r * Math.cos(s.start);
+                    const y1 = cy + r * Math.sin(s.start);
+                    const x2 = cx + r * Math.cos(s.start + s.angle);
+                    const y2 = cy + r * Math.sin(s.start + s.angle);
+                    const largeArc = s.angle > Math.PI ? 1 : 0;
+                    const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                    return <path key={s.status} d={path} fill={s.color} />;
+                  })}
+                  <g transform="translate(320, 40)">
+                    {slices.map((s, i) => (
+                      <g key={s.status} transform={`translate(0, ${i * 30})`}>
+                        <rect width="12" height="12" fill={s.color} rx="2" />
+                        <text x="20" y="10" fontSize="11" fill="var(--ink)">{s.status}: {s.count}</text>
+                      </g>
+                    ))}
+                  </g>
+                </>
+              );
+            })()}
+          </svg>
+        </div>
+        <div className="modal-actions"><button type="button" className="text-button" onClick={() => setStatsOpen(false)}>Close</button></div>
+      </DialogFrame>}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)}>
         <SettingsSection icon={<FolderOpen size={17} />} title="Your wishlist file" description={folderName ? `A private wishlist.json in ${folderName}` : "Choose a folder to keep your own copy on this device."}>
           <p className="settings-copy">Troved keeps a browser copy as you make changes. Where your browser allows it, a folder adds a portable <code>wishlist.json</code> that autosaves. Restoring a file merges unique groups and items instead of replacing your list.</p>
@@ -1078,18 +1872,36 @@ function App() {
             <button className="secondary-btn" onClick={() => restoreInputRef.current?.click()}><FileUp size={15} /> Restore JSON</button>
             <input ref={restoreInputRef} className="hidden-file-input" type="file" accept=".json,application/json" onChange={(event) => void restoreFromJson(event.target.files?.[0])} />
             <button className="secondary-btn" onClick={() => downloadWishlistJson(wishlist)}><ArrowDownToLine size={15} /> Download JSON</button>
+            <button className="secondary-btn" onClick={exportCsv}><ArrowDownToLine size={15} /> Export CSV</button>
             <button className="secondary-btn" onClick={() => downloadWishlistZip(wishlist)}><ArrowDownToLine size={15} /> ZIP backup</button>
+            <button className="secondary-btn" onClick={() => window.print()}><ArrowDownToLine size={15} /> Export PDF</button>
             {folderName && <button className="text-button danger-text" disabled={folderBusy} onClick={() => void disconnectFolder()}>Disconnect</button>}
             <button className="primary-btn" onClick={() => void chooseFolder(Boolean(folderName && !folderRef.current))} disabled={folderBusy || !supportsDirectoryPicker()}><FolderOpen size={15} />{folderBusy ? "Opening…" : folderName && !folderRef.current ? "Reconnect folder" : folderName ? "Change folder" : "Choose folder"}</button>
           </div>
           <SettingsError>{saveMessage}</SettingsError>
           {!supportsDirectoryPicker() && <p className="settings-copy">This browser cannot write directly to a chosen folder. Restore your <code>wishlist.json</code>, then download the updated file after editing and save it back to your folder.</p>}
-          <div className="settings-actions theme-settings"><span>Appearance</span><button className="secondary-btn" onClick={() => setTheme((current) => current === "light" ? "dark" : "light")}>{theme === "light" ? <Moon size={15} /> : <Sun size={15} />}{theme === "light" ? "Use dark theme" : "Use light theme"}</button></div>
+          <div className="settings-actions theme-settings">
+            <span>Appearance</span>
+            <button className={`secondary-btn ${themeSchedule !== "manual" ? "theme-scheduled" : ""}`} onClick={() => setTheme((current) => current === "light" ? "dark" : "light")}>{theme === "light" ? <Moon size={15} /> : <Sun size={15} />}{theme === "light" ? "Use dark theme" : "Use light theme"}</button>
+            <select className="sort-control" value={themeSchedule} onChange={(event) => {
+              const next = event.target.value as "manual" | "auto" | "morning-light-night-dark";
+              setThemeSchedule(next);
+              try { localStorage.setItem("wishr-theme-schedule", next); } catch {}
+              if (next !== "manual") {
+                // Clear manual theme override so schedule takes effect
+                try { localStorage.removeItem("wishr-theme"); } catch {}
+              }
+            }} aria-label="Theme schedule" title="Auto-switch theme based on time of day">
+              <option value="manual">Manual theme</option>
+              <option value="auto">Follow system</option>
+              <option value="morning-light-night-dark">Light 6–18, Dark 18–6</option>
+            </select>
+          </div>
         </SettingsSection>
         <SettingsSection icon={<ShieldCheck size={17} />} title="Save to server (NAS / SMB)" description={serverSaveConfigured ? "Server-side saving is configured. Your wishlist can be saved to the server's storage directory (e.g. a mounted NAS or SMB share)." : "Not configured. Set TROVED_SAVE_DIR on the Troved server to enable saving to a server directory."}>
           <p className="settings-copy">When enabled, clicking Save will write your current wishlist to <code>wishlist.json</code> in the server's configured directory. This directory can be a mounted NAS or SMB share, letting you keep a central copy on your network storage.</p>
           <div className="settings-actions">
-            {serverSaveConfigured && !serverSaveBusy && <button className="primary-btn" onClick={() => void saveWishlistToServerFn()}<ShieldCheck size={15} /> Save to server</button>}
+            {serverSaveConfigured && !serverSaveBusy && <button className="primary-btn" onClick={() => void saveWishlistToServerFn()}><ShieldCheck size={15} /> Save to server</button>}
             {serverSaveConfigured && serverSaveBusy && <button className="primary-btn" disabled>Saving…</button>}
             {!serverSaveConfigured && <button className="secondary-btn" disabled>Configure TROVED_SAVE_DIR on the server</button>}
             {serverSaveMessage && <span className="settings-copy">{serverSaveMessage}</span>}
@@ -1137,6 +1949,32 @@ function App() {
           <label className="field"><span>Display estimates in</span><select value={currency} onChange={(event) => setCurrency(event.target.value)}>{currencies.map((entry) => <option key={entry.iso_code} value={entry.iso_code}>{entry.iso_code} · {entry.name}</option>)}</select></label>
           <p className="settings-copy">{currency === "EUR" ? "EUR is the base currency." : `${rateMessage || "Daily reference rates are provided by Frankfurter."} Converted totals are estimates.`}</p>
           <button className="text-button refresh-rate" onClick={() => void fetchRate(currency, true)}>Refresh daily rate <ArrowUpRight size={14} /></button>
+        </SettingsSection>
+        <SettingsSection icon={<Coins size={17} />} title="Monthly budget" description={monthlyBudget ? `Tracking against ${formatMoney(monthlyBudget, "EUR")}/month` : "Optional spending limit tracker."}>
+          <p className="settings-copy">Set a monthly budget to track your spending against your wishlist. The progress bar shows how much of your budget is used by purchased items.</p>
+          <div className="budget-section">
+            <div className="budget-input-row">
+              <div className="price-input"><span>€</span><input type="number" min="0" step="10" value={monthlyBudget == null ? "" : String(monthlyBudget)} onChange={(event) => {
+                const v = event.target.value.trim() === "" ? null : Number(event.target.value);
+                setMonthlyBudget(v);
+                try { localStorage.setItem("wishr-monthly-budget", v != null ? String(v) : ""); } catch {}
+              }} placeholder="Optional budget" /></div>
+            </div>
+            {monthlyBudget != null && monthlyBudget > 0 && (() => {
+              const spent = verifiedEuroTotal(wishlist.items.filter(item => item.status === "purchased"));
+              const percentage = Math.min((spent / monthlyBudget) * 100, 100);
+              const barClass = percentage >= 90 ? "danger" : percentage >= 70 ? "warning" : "";
+              return (
+                <div className="budget-progress">
+                  <div className="budget-label">
+                    <span>{formatMoney(spent, "EUR")} spent</span>
+                    <span>{percentage.toFixed(0)}% of {formatMoney(monthlyBudget, "EUR")}</span>
+                  </div>
+                  <div className="budget-bar"><div className={`budget-bar-fill ${barClass}`} style={{ width: `${percentage}%` }} /></div>
+                </div>
+              );
+            })()}
+          </div>
         </SettingsSection>
         <p className="settings-footer"><ShieldCheck size={14} /> No wishlist is stored on Troved. Markdown leaves your browser only when you choose Improve, and is sent to the selected AI model.</p>
       </SettingsDialog>}
