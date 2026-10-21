@@ -19,7 +19,7 @@
 [![Node](https://img.shields.io/badge/Node-22+-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.0+-purple.svg)](https://vitejs.dev/)
-[![Tests](https://img.shields.io/badge/Tests-33%20passing-brightgreen.svg)]()
+[![CI](https://github.com/LukaG712/Trinity/actions/workflows/ci.yml/badge.svg)](https://github.com/LukaG712/Trinity/actions/workflows/ci.yml)
 
 Organize ideas into nested collections, track prices in EUR, import Markdown or CSV files, and plan your purchases, all without an account, cloud database, or internet connection. Your data stays on your device.
 
