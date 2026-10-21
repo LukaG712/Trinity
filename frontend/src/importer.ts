@@ -27,7 +27,7 @@ export type ImportResult = {
 const ignoredSections = /^(?:open questions?|related|sources?|references?|contents?|change(?:s| log)?|price research status|verified build geometry|priority tiers?|status of|notes?|research notes?)$/i;
 const currencyWarning = /(?:currency.{0,50}(?:unverif|unknown|uncertain|cannot be (?:checked|verified|evidenced))|(?:unverif|not evidenced).{0,40}currency|may not be EUR|neither the price nor its currency)/i;
 
-function cleanMarkdown(value: string) {
+export function cleanMarkdown(value: string) {
   return value
     .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
@@ -38,7 +38,7 @@ function cleanMarkdown(value: string) {
     .trim();
 }
 
-function parseAmount(raw: string) {
+export function parseAmount(raw: string) {
   let value = raw.trim().replace(/[\s\u00a0]/g, "");
   if (!value) return null;
   if (value.includes(",") && value.includes(".")) {
@@ -52,7 +52,7 @@ function parseAmount(raw: string) {
   return Number.isFinite(number) ? number : null;
 }
 
-function extractMoney(text: string) {
+export function extractMoney(text: string) {
   const euro = text.match(/(?:€\s*|\bEUR\s*)(\d[\d\s.,]*)|(\d[\d\s.,]*)\s*(?:€|\bEUR\b)/i);
   if (euro) return { priceEur: parseAmount(euro[1] || euro[2]), unverifiedAmount: null, currencyUnverified: false };
   const other = text.match(/(?:[$£]|\b(?:USD|GBP|CHF|CAD|AUD)\s*)(\d[\d\s.,]*)|(\d[\d\s.,]*)\s*(?:\$|£|\b(?:USD|GBP|CHF|CAD|AUD)\b)/i);
@@ -60,14 +60,14 @@ function extractMoney(text: string) {
   return { priceEur: null, unverifiedAmount: null, currencyUnverified: false };
 }
 
-function groupTitle(filename: string, markdown: string) {
+export function groupTitle(filename: string, markdown: string) {
   const title = markdown.match(/^#\s+(.+?)\s*#*\s*$/m)?.[1];
   const useful = title && !/^(?:readme|wishlist|notes|index)$/i.test(title.trim()) ? title.trim() : "";
   const raw = useful || filename.replace(/\.(?:md|markdown)$/i, "").replace(/\s*-\s*reformatted$/i, "").trim();
   return raw.replace(/\s+[—–-]\s+(?:parts?\s*&\s*budget|parts?\s*list|wishlist|itemlist).*$/i, "").trim() || "Imported wishlist";
 }
 
-function csvRows(text: string, delimiter: string) {
+export function csvRows(text: string, delimiter: string) {
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = "";
@@ -92,7 +92,7 @@ function csvRows(text: string, delimiter: string) {
   return rows;
 }
 
-function parseCsv(filename: string, text: string): ImportResult {
+export function parseCsv(filename: string, text: string): ImportResult {
   const cleanText = text.replace(/^\uFEFF/, "");
   const header = cleanText.split(/\r?\n/, 1)[0] || "";
   const delimiter = header.split(";").length > header.split(",").length ? ";" : ",";
@@ -156,11 +156,11 @@ function parseCsv(filename: string, text: string): ImportResult {
   return { filename, kind: items.length ? "wishlist" : "notes", groups, items, selected: items.length > 0, message: items.length ? `Detected ${groups.length} group${groups.length === 1 ? "" : "s"} and ${items.length} item${items.length === 1 ? "" : "s"}.` : "No wishlist items found." };
 }
 
-function slug(value: string) {
+export function slug(value: string) {
   return value.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "imported";
 }
 
-function parseMarkdown(filename: string, markdown: string): ImportResult {
+export function parseMarkdown(filename: string, markdown: string): ImportResult {
   const rootName = groupTitle(filename, markdown);
   const rootId = `import-${slug(rootName)}`;
   const lines = markdown.replace(/\r/g, "").split("\n");
