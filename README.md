@@ -23,7 +23,6 @@
 
 Organize ideas into nested collections, track prices in EUR, import Markdown or CSV files, and plan your purchases, all without an account, cloud database, or internet connection. Your data stays on your device.
 
-> 🇳🇱 Lees dit in het Nederlands: [Nederlandstalige README](README.nl.md).
 
 ---
 
@@ -475,7 +474,6 @@ Trinity/
 ├── manifest.json   PWA manifest
 ├── sw.js           Service worker for offline support
 ├── README.md       This file
-└── README.nl.md    Dutch translation
 ```
 
 ---
