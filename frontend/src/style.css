@@ -923,6 +923,85 @@ button:disabled { opacity: .48; cursor: not-allowed !important; transform: none 
   background: var(--paper-warm);
 }
 
+/* Group collapse button */
+.group-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.group-collapse-btn:hover {
+  background: var(--paper-warm);
+  color: var(--ink);
+}
+.group-collapse-btn svg {
+  transition: transform 0.2s ease;
+}
+
+/* Item dependency */
+.item-dependency {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--warning);
+  font-style: italic;
+}
+
+/* Goals dialog */
+.goals-section {
+  margin: 16px 0;
+}
+.goal-progress {
+  margin-top: 14px;
+}
+.goal-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.goal-bar {
+  height: 8px;
+  background: var(--line);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.goal-bar-fill {
+  height: 100%;
+  background: var(--green);
+  transition: width 0.3s ease;
+}
+.goal-bar-fill.warning {
+  background: var(--warning);
+}
+.goal-complete {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--green);
+  font-weight: 600;
+}
+.goal-warning {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--warning);
+  font-weight: 600;
+}
+.goal-expired {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--danger);
+  font-weight: 600;
+}
+
 /* Print styles */
 @media print {
   .topbar, .sidebar, .modal-backdrop, .toast, .bulk-bar, .list-controls, .item-more, .item-checkbox {

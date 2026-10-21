@@ -39,6 +39,11 @@ Troved is a wishlist that runs in your browser. Your wishlist stays in your brow
 - Purchase history: record purchase date and store for purchased items
 - Item notes journal: append dated notes to items over time for tracking research and decisions
 - Price history: track price changes over time with sparkline charts on item cards
+- Enhanced search: full-text search now includes tags, links, and purchase source
+- Item duplication: quickly duplicate any item with one click from the item menu
+- Group collapse/expand: collapse and expand nested groups in the sidebar to reduce clutter
+- Wishlist goals: set a target number of items to purchase with an optional deadline and track progress
+- Item dependencies: mark items as blocked by another item or condition, shown with a visual indicator
 
 ## Keyboard shortcuts
 

@@ -1,9 +1,9 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
   ArrowDown, ArrowDownToLine, ArrowUpRight, Check, ChevronDown, CircleHelp,
-  Coins, Compass, FileUp, FolderOpen, FolderPlus, Heart, Layers3, Link2,
+  Coins, Compass, Copy, FileUp, FolderOpen, FolderPlus, Heart, Layers3, Link2,
   Moon, MoreHorizontal, Pencil, Plus, Search, Settings2, ShieldCheck,
-  ShoppingBag, Sparkles, Sun, Trash2, Undo2, X,
+  ShoppingBag, Sparkles, Sun, Target, Trash2, Undo2, X,
 } from "lucide-react";
 import { DialogFrame, ItemDialog, GroupDialog, ImportDialog, ModalHeading, SettingsDialog, SettingsError, SettingsSection } from "./Dialogs";
 import { fetchOllamaModels, improveMarkdownImport, normalizeOllamaUrl, type OllamaModel } from "./ollama";
@@ -138,6 +138,19 @@ function App() {
     } catch { return null; }
   });
   const [statsOpen, setStatsOpen] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem("wishr-collapsed-groups");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
+  const [goalsOpen, setGoalsOpen] = useState(false);
+  const [wishlistGoal, setWishlistGoal] = useState<{ target: number; deadline?: string } | null>(() => {
+    try {
+      const stored = localStorage.getItem("wishr-goal");
+      return stored ? JSON.parse(stored) : null;
+    } catch { return null; }
+  });
   const [dragItem, setDragItem] = useState<string | null>(null);
   const [dragOverItem, setDragOverItem] = useState<string | null>(null);
   const [dragGroup, setDragGroup] = useState<string | null>(null);
@@ -761,7 +774,7 @@ function App() {
     };
     return new Map(wishlist.items.map((item) => [
       item.id,
-      [item.name, item.brandModel, item.subgroup, item.notes, getGroupLabel(item.groupId)]
+      [item.name, item.brandModel, item.subgroup, item.notes, item.tags?.join(" "), item.link, item.purchasedFrom, getGroupLabel(item.groupId)]
         .filter(Boolean).join(" ").toLocaleLowerCase(),
     ]));
   }, [wishlist.groups, wishlist.items]);
@@ -881,6 +894,23 @@ function App() {
       items: wishlist.items.filter((item) => !ids.has(item.groupId)),
     }, `${group.name} and its contents removed.`);
     setSelectedGroup("all");
+  };
+
+  const duplicateItem = (item: WishlistItem) => {
+    if (cacheIssueRef.current && !folderRef.current) return;
+    const duplicate = { ...item, id: crypto.randomUUID(), name: `${item.name} (copy)`, createdAt: Date.now() };
+    commitWishlist({ ...wishlist, items: [duplicate, ...wishlist.items] });
+    setNotice(`${duplicate.name} added to your list.`);
+  };
+
+  const toggleGroupCollapse = (groupId: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      try { localStorage.setItem("wishr-collapsed-groups", JSON.stringify([...next])); } catch {}
+      return next;
+    });
   };
 
   // Bulk actions
@@ -1492,6 +1522,7 @@ function App() {
     .map((group) => {
       const stats = groupStats.get(group.id) || { count: 0, total: 0 };
       const childGroups = wishlist.groups.some((entry) => entry.parentId === group.id);
+      const isCollapsed = collapsedGroups.has(group.id);
       const isDragging = dragGroup === group.id || touchDragGroup === group.id;
       const isDragOver = dragOverGroup === group.id && dragGroup !== group.id && touchDragOverGroup !== group.id;
       return (
@@ -1524,6 +1555,7 @@ function App() {
             }
           }}>
           <button className="group-link" onClick={() => { setSelectedGroup(group.id); setCollectionsOpen(false); }} title={`${group.name} · ${stats.count} ${stats.count === 1 ? "idea" : "ideas"} · ${displayMoney(stats.total)} estimated total`}>
+            {childGroups && <button className="group-collapse-btn" onClick={(e) => { e.stopPropagation(); toggleGroupCollapse(group.id); }} aria-label={isCollapsed ? `Expand ${group.name}` : `Collapse ${group.name}`}>{isCollapsed ? <ChevronDown size={13} /> : <ChevronDown size={13} style={{ transform: 'rotate(180deg)' }} />}</button>}
             <span className="group-glyph"><span /></span><span className="group-link-name">{group.name}</span><small key={stats.count}>{stats.count}</small>
           </button>
           <details className="group-actions"><summary aria-label={`Manage ${group.name}`}><MoreHorizontal size={16} /></summary><div className="group-menu">
@@ -1531,7 +1563,7 @@ function App() {
             <button disabled={Boolean(cacheIssue)} onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); setGroupEditor(null); setSelectedGroup(group.id); }}>Add subgroup</button>
             <button disabled={Boolean(cacheIssue)} className="danger-text" onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); removeGroup(group); }}>Delete group…</button>
           </div></details>
-          {childGroups && <div className="nested-groups">{renderGroupTree(group.id, depth + 1)}</div>}
+          {childGroups && (!isCollapsed) && <div className="nested-groups">{renderGroupTree(group.id, depth + 1)}</div>}
         </div>
       );
     });
@@ -1618,6 +1650,7 @@ function App() {
                 {([["all", "Everything"], ["priced", "With a price"], ["unpriced", "No price"], ["priority", "High priority"], ["status", "By status"]] as const).map(([value, label]) => <button key={value} className={`filter-chip ${filter === value ? "active" : ""}`} onClick={() => { setFilter(value); if (value !== "status") setStatusFilter("all"); }} aria-pressed={filter === value}>{label}</button>)}
                 <button className={`filter-chip ${shoppingListMode ? "active" : ""}`} onClick={() => { setShoppingListMode(!shoppingListMode); if (shoppingListMode) { setStatusFilter("all"); setFilter("all"); } else { setStatusFilter("purchased"); setFilter("status"); } }} aria-pressed={shoppingListMode} title="Show only purchased items in a compact checklist">{shoppingListMode ? "📋 Shopping" : "🛒 Shopping list"}</button>
                 <button className={`filter-chip ${statsOpen ? "active" : ""}`} onClick={() => setStatsOpen(true)} aria-pressed={statsOpen}>📊 Stats</button>
+                <button className={`filter-chip ${goalsOpen ? "active" : ""}`} onClick={() => setGoalsOpen(true)} aria-pressed={goalsOpen}>🎯 Goals</button>
                 <button className={`filter-chip ${shareOpen ? "active" : ""}`} onClick={() => setShareOpen(true)} aria-pressed={shareOpen}>🔗 Share</button>
               </div>
               {uniqueTags.length > 0 && <div className="tag-filter-list" role="group" aria-label="Filter by tag">
@@ -1665,11 +1698,12 @@ function App() {
                     <div className="item-card-top">
                       <label className="item-checkbox"><input type="checkbox" checked={isSelected} onChange={() => toggleSelectItem(item.id)} /><span><Check size={12} /></span></label>
                       <span className={`item-symbol ${item.currencyUnverified ? "unverified" : ""}`}><ShoppingBag size={17} /></span><div className="item-badges">{item.priority && <span className={`priority-tag ${item.priority.toLowerCase()}`}>{item.priority}</span>}{item.tags?.length && item.tags.map((tag) => <span key={tag} className="tag-tag">{tag}</span>)}{item.status && item.status !== "wanted" && <span className="status-tag">{item.status}</span>}{priceAlert && <span className="alert-tag" title={`Price ${formatMoney(item.priceEur ?? 0, "EUR")} is at or below your target ${formatMoney(item.targetPrice ?? 0, "EUR")}`}>🔔 Deal!</span>}</div>
-                      <details className="item-more"><summary aria-label={`Actions for ${item.name}`}><MoreHorizontal size={17} /></summary><div className="group-menu"><button disabled={Boolean(cacheIssue)} onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); setItemEditor(item); }}><Pencil size={14} /> Edit idea</button><button disabled={Boolean(cacheIssue)} className="danger-text" onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); removeItem(item); }}><Trash2 size={14} /> Remove…</button></div></details>
+                      <details className="item-more"><summary aria-label={`Actions for ${item.name}`}><MoreHorizontal size={17} /></summary><div className="group-menu"><button disabled={Boolean(cacheIssue)} onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); setItemEditor(item); }}><Pencil size={14} /> Edit idea</button><button disabled={Boolean(cacheIssue)} onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); duplicateItem(item); }}><Copy size={14} /> Duplicate</button><button disabled={Boolean(cacheIssue)} className="danger-text" onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); removeItem(item); }}><Trash2 size={14} /> Remove…</button></div></details>
                     </div>
                     <h3>{item.name}</h3>
                     {(item.brandModel || item.subgroup) && <p className="item-subtitle">{[item.brandModel, item.subgroup].filter(Boolean).join(" · ")}</p>}
                     {item.notes && <p className="item-note">{item.notes}</p>}
+                    {item.blockedBy && <p className="item-dependency" title={`Blocked by: ${item.blockedBy}`}>⛔ Blocked by: {item.blockedBy}</p>}
                     <div className="item-card-bottom">
                       <div className="item-group"><span>{parentLabel(wishlist.groups, item.groupId)}</span>{item.quantity && item.quantity > 1 && <small>× {item.quantity}</small>}</div>
                       <div className="item-price">
@@ -1679,6 +1713,18 @@ function App() {
                             ? <><strong className="price-pending">Not priced</strong><small>A wish, not a promise</small></>
                             : <><strong>{converted == null ? formatMoney(price!, "EUR") : formatMoney(converted, currency)}</strong><small>{currency === "EUR" ? "EUR estimate" : `from ${formatMoney(price!, "EUR")}`}</small></>}
                         {item.targetPrice != null && item.targetPrice > 0 && <small className="target-price-note">Target: {formatMoney(item.targetPrice, "EUR")}</small>}
+                        {item.priceHistory && item.priceHistory.length > 1 && <span className="sparkline" title={`Price history: ${item.priceHistory.map((p: {price: number; date: number}) => `${formatMoney(p.price, "EUR")} on ${new Date(p.date).toLocaleDateString()}`).join(", ")}`}>
+                          <svg viewBox="0 0 60 20" width="60" height="20">
+                            {(() => {
+                              const prices = item.priceHistory.map((p: {price: number; date: number}) => p.price);
+                              const min = Math.min(...prices);
+                              const max = Math.max(...prices);
+                              const range = max - min || 1;
+                              const points = item.priceHistory.map((p: {price: number; date: number}, i: number) => `${(i / (item.priceHistory!.length - 1)) * 56},${18 - ((p.price - min) / range) * 16}`).join(" ");
+                              return <polyline points={`2,18 ${points}`} fill="none" stroke="var(--green)" strokeWidth="2" />;
+                            })()}
+                          </svg>
+                        </span>}
                       </div>
                     </div>
                     {safeLink(item.link) && <a className="item-link" href={safeLink(item.link)} target="_blank" rel="noreferrer"><Link2 size={13} /> Visit the link <ArrowUpRight size={13} /></a>}
@@ -1864,6 +1910,49 @@ function App() {
           </svg>
         </div>
         <div className="modal-actions"><button type="button" className="text-button" onClick={() => setStatsOpen(false)}>Close</button></div>
+      </DialogFrame>}
+      {goalsOpen && <DialogFrame className="goals-dialog" labelledBy="goals-title" onClose={() => setGoalsOpen(false)}>
+        <ModalHeading eyebrow="WISHLIST GOALS" title="Track your progress" id="goals-title" onClose={() => setGoalsOpen(false)} />
+        <p className="settings-copy">Set a goal to track how many items you want to purchase or how much you want to spend.</p>
+        <div className="goals-section">
+          <div className="field-grid">
+            <label className="field"><span>Target items</span><input type="number" min="1" max="1000" value={wishlistGoal?.target || ""} onChange={(event) => {
+              const v = event.target.value.trim() === "" ? null : Number(event.target.value);
+              const newGoal = v ? { target: v, deadline: wishlistGoal?.deadline } : null;
+              setWishlistGoal(newGoal);
+              try { localStorage.setItem("wishr-goal", newGoal ? JSON.stringify(newGoal) : ""); } catch {}
+            }} placeholder="How many items?" /></label>
+            <label className="field"><span>Deadline <i>Optional</i></span><input type="date" value={wishlistGoal?.deadline || ""} onChange={(event) => {
+              const newGoal = wishlistGoal ? { ...wishlistGoal, deadline: event.target.value || undefined } : null;
+              setWishlistGoal(newGoal);
+              try { localStorage.setItem("wishr-goal", newGoal ? JSON.stringify(newGoal) : ""); } catch {}
+            }} /></label>
+          </div>
+          {wishlistGoal && wishlistGoal.target > 0 && (() => {
+            const purchased = wishlist.items.filter(i => i.status === "purchased").length;
+            const percentage = Math.min((purchased / wishlistGoal.target) * 100, 100);
+            const barClass = percentage >= 100 ? "" : percentage >= 70 ? "warning" : "";
+            const daysLeft = wishlistGoal.deadline ? Math.max(0, Math.ceil((new Date(wishlistGoal.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null;
+            return (
+              <div className="goal-progress">
+                <div className="goal-label">
+                  <span>{purchased} of {wishlistGoal.target} items purchased</span>
+                  <span>{percentage.toFixed(0)}%{daysLeft != null ? ` · ${daysLeft} days left` : ""}</span>
+                </div>
+                <div className="goal-bar"><div className={`goal-bar-fill ${barClass}`} style={{ width: `${percentage}%` }} /></div>
+                {percentage >= 100 && <p className="goal-complete">🎉 Goal achieved! Congratulations!</p>}
+                {daysLeft != null && daysLeft <= 7 && daysLeft > 0 && <p className="goal-warning">⏰ Only {daysLeft} days remaining!</p>}
+                {daysLeft === 0 && <p className="goal-expired">⏰ Deadline has passed!</p>}
+              </div>
+            );
+          })()}
+          {wishlistGoal && <button className="text-button danger-text" onClick={() => {
+            setWishlistGoal(null);
+            try { localStorage.removeItem("wishr-goal"); } catch {}
+            setNotice("Goal cleared.");
+          }}>Clear goal</button>}
+        </div>
+        <div className="modal-actions"><button type="button" className="text-button" onClick={() => setGoalsOpen(false)}>Close</button></div>
       </DialogFrame>}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)}>
         <SettingsSection icon={<FolderOpen size={17} />} title="Your wishlist file" description={folderName ? `A private wishlist.json in ${folderName}` : "Choose a folder to keep your own copy on this device."}>

@@ -39,6 +39,11 @@ Troved is een wishlist die in je browser draait. Je wishlist blijft in je browse
 - Aankoophistorie: registreer aankoopdatum en winkel voor gekochte items
 - Item notitiesjournal: voeg gedateerde notities toe aan items over tijd voor het bijhouden van onderzoek en beslissingen
 - Prijs historie: houd prijsveranderingen bij over tijd met sparkline-grafieken op itemkaarten
+- Verbeterde zoekfunctie: full-text zoekopdrachten omvatten nu tags, links en aankoopbron
+- Item duplicatie: dupliceer snel een item met één klik vanuit het itemmenu
+- Groep inklappen/uitklappen: klap geneste groepen in de zijbalk in en uit om rommel te verminderen
+- Wishlist doelen: stel een doel aantal items in om te kopen met een optionele deadline en houd voortgang bij
+- Item afhankelijkheden: markeer items als geblokkeerd door een ander item of voorwaarde, getoond met een visuele indicator
 
 ## Sneltoetsen
 
