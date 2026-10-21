@@ -20,19 +20,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: npm
 
       - name: Install frontend dependencies
-        run: cd frontend && npm ci
+        working-directory: frontend
+        run: npm ci
 
       - name: Install server dependencies
-        run: cd server && npm ci
+        working-directory: server
+        run: npm ci
 
       - name: Run frontend tests
-        run: cd frontend && npm test
+        working-directory: frontend
+        run: npm test
 
       - name: Run server tests
-        run: cd server && npm test
+        working-directory: server
+        run: npm test
 
       - name: Build frontend
-        run: cd frontend && npm run build
+        working-directory: frontend
+        run: npm run build
