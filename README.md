@@ -1,4 +1,4 @@
-# Trinity — Your Personal Wishlist
+﻿# Trinity \u2013 Your Personal Wishlist
 
 > A private, local-first wishlist that runs entirely in your browser. No account, no cloud, no subscription.
 
@@ -7,13 +7,13 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.0+-purple.svg)](https://vitejs.dev/)
 
-Organize ideas into collections, track prices, plan purchases, and share your wishlist — all without an account or internet connection. Your data stays on your device.
+Organize ideas into collections, track prices, plan purchases, and share your wishlist \u2013 all without an account or internet connection. Your data stays on your device.
 
 ---
 
 ## 🎯 What is Trinity?
 
-Trinity is a **wishlist that runs entirely in your browser**. There's no account to create, no cloud database, and no subscription. Your wishlist lives in your browser's storage or in a `wishlist.json` file in a folder you choose — fully portable, fully yours.
+Trinity is a **wishlist that runs entirely in your browser**. There's no account to create, no cloud database, and no subscription. Your wishlist lives in your browser's storage or in a `wishlist.json` file in a folder you choose \u2013 fully portable, fully yours.
 
 An optional lightweight server adds AI-assisted Markdown import (via OpenAI, Anthropic, Google Gemini, or local Ollama), but the core app works **completely offline** without any backend.
 
@@ -39,7 +39,7 @@ npm ci
 npm run dev
 ```
 
-Open the URL Vite prints (usually `http://127.0.0.1:5173`). **That's it** — Trinity works without any backend.
+Open the URL Vite prints (usually `http://127.0.0.1:5173`). **That's it** \u2013 Trinity works without any backend.
 
 **Want AI-assisted import?** Start the optional server:
 ```sh
@@ -56,76 +56,76 @@ node server/index.mjs
 
 ### 💰 Price Tracking
 
-- **EUR price tracking** — estimate prices per item with group and total summaries
-- **Currency conversion** — optional daily reference rates from [Frankfurter](https://www.frankfurter.dev/)
-- **Price history** — track price changes over time with sparkline charts on item cards
-- **Price timeline** — click any sparkline to see a detailed price history chart with statistics
-- **Price alerts** — set a target price per item; get a "🔔 Deal!" badge when the price drops
+- **EUR price tracking** \u2013 estimate prices per item with group and total summaries
+- **Currency conversion** \u2013 optional daily reference rates from [Frankfurter](https://www.frankfurter.dev/)
+- **Price history** \u2013 track price changes over time with sparkline charts on item cards
+- **Price timeline** \u2013 click any sparkline to see a detailed price history chart with statistics
+- **Price alerts** \u2013 set a target price per item; get a "🔔 Deal!" badge when the price drops
 
 ### 📊 Planning & Budgeting
 
-- **Budget tracking** — set a monthly budget and monitor spending with a visual progress bar
-- **Wishlist goals** — set a target number of items to purchase with an optional deadline
-- **Statistics dashboard** — view SVG charts showing spending by group and items by status
-- **Purchase history** — record when and where you bought each item
+- **Budget tracking** \u2013 set a monthly budget and monitor spending with a visual progress bar
+- **Wishlist goals** \u2013 set a target number of items to purchase with an optional deadline
+- **Statistics dashboard** \u2013 view SVG charts showing spending by group and items by status
+- **Purchase history** \u2013 record when and where you bought each item
 
 ### 📂 Organization
 
-- **Nested collections** — organize items into groups and subgroups with unlimited nesting
-- **Group collapse/expand** — reduce clutter by collapsing nested groups
-- **Tags** — add comma-separated tags for cross-cutting organization
-- **Tag filtering** — one-click tag chips showing item counts for instant filtering
-- **Priority levels** — mark items as High, Medium, or Low priority
-- **Status workflow** — track items through Wanted → Researching → Planned → Purchased
-- **Item dependencies** — mark items as "blocked by" another item or condition
-- **Drag & drop** — reorder items, move between groups, and nest groups (works on touch devices)
-- **Item favorites** — star items for quick access with a dedicated favorites filter
-- **Group color coding** — assign colors to groups for visual distinction
+- **Nested collections** \u2013 organize items into groups and subgroups with unlimited nesting
+- **Group collapse/expand** \u2013 reduce clutter by collapsing nested groups
+- **Tags** \u2013 add comma-separated tags for cross-cutting organization
+- **Tag filtering** \u2013 one-click tag chips showing item counts for instant filtering
+- **Priority levels** \u2013 mark items as High, Medium, or Low priority
+- **Status workflow** \u2013 track items through Wanted → Researching → Planned → Purchased
+- **Item dependencies** \u2013 mark items as "blocked by" another item or condition
+- **Drag & drop** \u2013 reorder items, move between groups, and nest groups (works on touch devices)
+- **Item favorites** \u2013 star items for quick access with a dedicated favorites filter
+- **Group color coding** \u2013 assign colors to groups for visual distinction
 
 ### 🔍 Search & Compare
 
-- **Full-text search** — search across names, brands, tags, links, notes, and sources
-- **Fuzzy search** — find items even with typos; results ranked by match quality
-- **Sort options** — sort by date, name, price, priority, or status
-- **Side-by-side comparison** — compare selected items in a detailed table view
-- **Bulk actions** — multi-select items to change status, move, or remove in one step
+- **Full-text search** \u2013 search across names, brands, tags, links, notes, and sources
+- **Fuzzy search** \u2013 find items even with typos; results ranked by match quality
+- **Sort options** \u2013 sort by date, name, price, priority, or status
+- **Side-by-side comparison** \u2013 compare selected items in a detailed table view
+- **Bulk actions** \u2013 multi-select items to change status, move, or remove in one step
 
 ### 📥 Import & Export
 
-- **Markdown import** — import `.md` files with headings, lists, and tables
-- **CSV import** — import CSV files with wishlist columns
-- **AI-assisted import** — use AI to organize messy Markdown
-- **Export** — CSV, Markdown, JSON, ZIP backup, and PDF (via browser print)
+- **Markdown import** \u2013 import `.md` files with headings, lists, and tables
+- **CSV import** \u2013 import CSV files with wishlist columns
+- **AI-assisted import** \u2013 use AI to organize messy Markdown
+- **Export** \u2013 CSV, Markdown, JSON, ZIP backup, and PDF (via browser print)
 
 ### 🔗 Sharing
 
-- **Share links** — generate a shareable link so others can view your wishlist (great for gift guides!)
-- **Read-only shared view** — recipients see your wishlist without edit controls
+- **Share links** \u2013 generate a shareable link so others can view your wishlist (great for gift guides!)
+- **Read-only shared view** \u2013 recipients see your wishlist without edit controls
 
 ### 🤖 AI Assistance
 
-- **Multi-provider support** — OpenAI, Anthropic, Google Gemini, or local Ollama
-- **Markdown organization** — AI refines messy Markdown into structured items
-- **Privacy-first** — only the Markdown you choose to improve is sent; CSV files are never sent
-- **Local AI** — use Ollama for completely private, offline AI processing
+- **Multi-provider support** \u2013 OpenAI, Anthropic, Google Gemini, or local Ollama
+- **Markdown organization** \u2013 AI refines messy Markdown into structured items
+- **Privacy-first** \u2013 only the Markdown you choose to improve is sent; CSV files are never sent
+- **Local AI** \u2013 use Ollama for completely private, offline AI processing
 
 ### 🎨 Interface
 
-- **Light & dark themes** — applied before first paint; no flash for dark-mode users
-- **Dark mode schedule** — auto-switch themes based on time of day or system preference
-- **Item images** — attach product image URLs displayed as thumbnails
-- **Shopping list mode** — compact checklist view of purchased items, optimized for in-store use
-- **PWA support** — install as a standalone app with offline access
-- **Keyboard navigation** — full keyboard support with focus trapping in dialogs
-- **Bundled fonts** — DM Sans and Manrope via Fontsource; no external CDN calls
+- **Light & dark themes** \u2013 applied before first paint; no flash for dark-mode users
+- **Dark mode schedule** \u2013 auto-switch themes based on time of day or system preference
+- **Item images** \u2013 attach product image URLs displayed as thumbnails
+- **Shopping list mode** \u2013 compact checklist view of purchased items, optimized for in-store use
+- **PWA support** \u2013 install as a standalone app with offline access
+- **Keyboard navigation** \u2013 full keyboard support with focus trapping in dialogs
+- **Bundled fonts** \u2013 DM Sans and Manrope via Fontsource; no external CDN calls
 
 ### 🔒 Data & Privacy
 
-- **Local-first** — your data never leaves your device unless you choose to
-- **Folder autosave** — autosave to `wishlist.json` in a folder you choose
-- **No account required** — no sign-up, no cloud database, no tracking
-- **Server-side saving** — optional NAS/SMB save for central backup
-- **Reduced motion support** — respects system accessibility preferences
+- **Local-first** \u2013 your data never leaves your device unless you choose to
+- **Folder autosave** \u2013 autosave to `wishlist.json` in a folder you choose
+- **No account required** \u2013 no sign-up, no cloud database, no tracking
+- **Server-side saving** \u2013 optional NAS/SMB save for central backup
+- **Reduced motion support** \u2013 respects system accessibility preferences
 
 ---
 
@@ -224,7 +224,7 @@ Trinity stores its working copy in browser storage. Here's how to keep your data
 | **Restore JSON** | Merge a valid backup into your current list |
 | **Server save** | Central backup on NAS/SMB |
 
-> 💡 Choosing a folder that already contains a wishlist merges unique groups and items — matches are never duplicated.
+> 💡 Choosing a folder that already contains a wishlist merges unique groups and items \u2013 matches are never duplicated.
 
 ### Server-Side Saving (NAS / SMB)
 
@@ -239,7 +239,7 @@ Trinity stores its working copy in browser storage. Here's how to keep your data
 
 ### Docker / Proxmox
 
-> ⚠️ **Security warning:** The server has **no user authentication**. Keep it on a private network — never expose port 3000 to the public internet.
+> ⚠️ **Security warning:** The server has **no user authentication**. Keep it on a private network \u2013 never expose port 3000 to the public internet.
 
 #### Quick Start
 
@@ -281,7 +281,7 @@ docker compose up -d --build
 
 ### 🖥️ Desktop App
 
-A standalone Windows desktop app — no browser tabs, no installation required.
+A standalone Windows desktop app \u2013 no browser tabs, no installation required.
 
 | File | Description |
 |---|---|
@@ -347,22 +347,22 @@ Trinity/
 
 ## 🔒 Security
 
-- **No authentication** — keep the server on a private network or behind a VPN
+- **No authentication** \u2013 keep the server on a private network or behind a VPN
 - **Never expose port 3000** to the public internet
 - **API keys** live only in `.env` (kept out of source control, `chmod 600`)
-- **Your data stays local** — wishlist lives in your browser or a folder you choose
-- **AI privacy** — only Markdown you choose to Improve is sent; CSV files are never sent
-- **Cloud costs** — cloud model usage may incur charges from the provider
+- **Your data stays local** \u2013 wishlist lives in your browser or a folder you choose
+- **AI privacy** \u2013 only Markdown you choose to Improve is sent; CSV files are never sent
+- **Cloud costs** \u2013 cloud model usage may incur charges from the provider
 
 ---
 
 ## ♿ Accessibility
 
-- **Keyboard navigation** — full keyboard support with visible focus indicators
-- **Dialog focus trapping** — focus stays within open dialogs
-- **Escape to close** — press `Esc` to close any dialog
-- **Reduced motion** — respects `prefers-reduced-motion` system preference
-- **Light & dark themes** — two complete themes with proper contrast ratios
+- **Keyboard navigation** \u2013 full keyboard support with visible focus indicators
+- **Dialog focus trapping** \u2013 focus stays within open dialogs
+- **Escape to close** \u2013 press `Esc` to close any dialog
+- **Reduced motion** \u2013 respects `prefers-reduced-motion` system preference
+- **Light & dark themes** \u2013 two complete themes with proper contrast ratios
 
 ---
 
@@ -394,7 +394,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📜 License
 
-MIT License — see [LICENSE](LICENSE) for details.
+MIT License \u2013 see [LICENSE](LICENSE) for details.
 
 ---
 
