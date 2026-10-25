@@ -1,11 +1,18 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
-  ArrowDown, ArrowDownToLine, ArrowUpRight, Check, ChevronDown, CircleHelp,
-  Coins, Compass, Copy, FileUp, FolderOpen, FolderPlus, Heart, Layers3, Link2,
-  Moon, MoreHorizontal, Pencil, Plus, Search, Settings2, ShieldCheck,
-  ShoppingBag, Sparkles, Sun, Target, Trash2, Undo2, X,
+  ArrowDownToLine, ArrowUpRight, Check, ChevronDown, CircleHelp,
+  Coins, FileUp, FolderOpen, FolderPlus, Layers3,
+  Moon, Plus, Search, Settings2, ShieldCheck,
+  Sparkles, Sun, Undo2, X,
 } from "lucide-react";
-import { DialogFrame, ItemDialog, GroupDialog, ImportDialog, ModalHeading, SettingsDialog, SettingsError, SettingsSection } from "./Dialogs";
+import { ItemDialog, GroupDialog, ImportDialog, SettingsDialog, SettingsError, SettingsSection } from "./Dialogs";
+import ComparisonView from "./components/ComparisonView";
+import ShareDialog from "./components/ShareDialog";
+import TimelineDialog from "./components/TimelineDialog";
+import StatsDialog from "./components/StatsDialog";
+import GoalsDialog from "./components/GoalsDialog";
+import Sidebar from "./components/Sidebar";
+import ItemList from "./components/ItemList";
 import { fetchOllamaModels, improveMarkdownImport, normalizeOllamaUrl, type OllamaModel } from "./ollama";
 import { fetchCloudModels, fetchCloudProviders, improveWithCloudModel, fetchSaveStatus, saveWishlistToServer, type CloudAiProvider } from "./cloudAi";
 import { loadDirectoryHandle, pickWishlistDirectory, readWishlistFile, removeDirectoryHandle, saveDirectoryHandle, supportsDirectoryPicker, type WishrDirectoryHandle, writeWishlistFile } from "./folderStorage";
@@ -914,6 +921,19 @@ function App() {
     setNotice(`${duplicate.name} added to your list.`);
   };
 
+  const trackPrice = (item: WishlistItem) => {
+    if (cacheIssueRef.current && !folderRef.current) return;
+    if (item.priceEur == null) {
+      setNotice("Set a price for this item before tracking.");
+      return;
+    }
+    const history = [...(item.priceHistory || []), { price: item.priceEur, date: Date.now() }];
+    const updated = wishlist.items.map((entry) =>
+      entry.id === item.id ? { ...entry, priceHistory: history } : entry
+    );
+    commitWishlist({ ...wishlist, items: updated }, `Price tracked for ${item.name}.`);
+  };
+
   const toggleFavorite = (itemId: string) => {
     const items = wishlist.items.map((entry) =>
       entry.id === itemId ? { ...entry, favorited: !entry.favorited } : entry
@@ -1598,57 +1618,6 @@ function App() {
     setNotice(`${added} ${added === 1 ? "item" : "items"} added. Your import is saved.`);
   };
 
-  const renderGroupTree = (parentId?: string, depth = 0): ReactNode[] => wishlist.groups
-    .filter((group) => (group.parentId || undefined) === parentId)
-    .map((group) => {
-      const stats = groupStats.get(group.id) || { count: 0, total: 0 };
-      const childGroups = wishlist.groups.some((entry) => entry.parentId === group.id);
-      const isCollapsed = collapsedGroups.has(group.id);
-      const isDragging = dragGroup === group.id || touchDragGroup === group.id;
-      const isDragOver = dragOverGroup === group.id && dragGroup !== group.id && touchDragOverGroup !== group.id;
-      return (
-        <div className={`nav-group ${selectedGroup === group.id ? "active" : ""} ${isDragging ? "dragging" : ""} ${isDragOver ? "drag-over" : ""}`}
-          key={group.id}
-          data-touch-id={group.id}
-          style={{ "--depth": depth } as React.CSSProperties}
-          draggable
-          onDragStart={(e) => handleGroupDragStart(e, group.id)}
-          onDragEnd={handleGroupDragEnd}
-          onTouchStart={(e) => handleTouchStart(e, 'group', group.id)}
-          onDragOver={(e) => {
-            if (dragGroup) {
-              handleGroupDragOver(e, group.id);
-            } else if (dragItem) {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = "move";
-              setDragOverGroup(group.id);
-            }
-          }}
-          onDragLeave={handleGroupDragLeave}
-          onDrop={(e) => {
-            const groupData = e.dataTransfer.getData("application/x-Trinity-group");
-            if (groupData) {
-              handleGroupDrop(e, group.id);
-            } else {
-              // An item was dropped on a group; move the item to this group
-              e.preventDefault();
-              handleGroupItemDrop(group.id, "");
-            }
-          }}>
-          <button className="group-link" onClick={() => { setSelectedGroup(group.id); setCollectionsOpen(false); }} title={`${group.name} · ${stats.count} ${stats.count === 1 ? "idea" : "ideas"} · ${displayMoney(stats.total)} estimated total`}>
-            {childGroups && <button className="group-collapse-btn" onClick={(e) => { e.stopPropagation(); toggleGroupCollapse(group.id); }} aria-label={isCollapsed ? `Expand ${group.name}` : `Collapse ${group.name}`}>{isCollapsed ? <ChevronDown size={13} /> : <ChevronDown size={13} style={{ transform: 'rotate(180deg)' }} />}</button>}
-            <span className="group-glyph" style={group.color ? { '--group-color': group.color } as React.CSSProperties : undefined}><span /></span><span className="group-link-name">{group.name}</span><small key={stats.count}>{stats.count}</small>
-          </button>
-          <details className="group-actions"><summary aria-label={`Manage ${group.name}`}><MoreHorizontal size={16} /></summary><div className="group-menu">
-            <button onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); setGroupEditor(group); }}>Edit group</button>
-            <button disabled={Boolean(cacheIssue)} onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); setGroupEditor(null); setSelectedGroup(group.id); }}>Add subgroup</button>
-            <button disabled={Boolean(cacheIssue)} className="danger-text" onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); removeGroup(group); }}>Delete group…</button>
-          </div></details>
-          {childGroups && (!isCollapsed) && <div className="nested-groups">{renderGroupTree(group.id, depth + 1)}</div>}
-        </div>
-      );
-    });
-
   return (
     <div className="app-shell">
 
@@ -1674,33 +1643,35 @@ function App() {
             <button className="icon-btn" onClick={() => { setSettingsOpen(true); setCollectionsOpen(false); }} aria-label="Open preferences" title="Preferences"><Settings2 size={17} /></button>
           </div>
         </header>
-        {collectionsOpen && <div className="mega-backdrop" onClick={() => setCollectionsOpen(false)} />}
-        <div className={`mega-menu ${collectionsOpen ? "open" : ""}`}>
-          <div className="mega-panel"><div className="mega-menu-inner">
-            <aside className="mega-aside">
-              <button className="quick-add" onClick={() => { addNewItem(); setCollectionsOpen(false); }} disabled={!wishlist.groups.length || Boolean(cacheIssue)}><Plus size={17} /> Add to wishlist <kbd>CTRL I</kbd></button>
-              <div className="nav-label">YOUR SPACE</div>
-              <button className={`all-items-link ${selectedGroup === "all" ? "selected" : ""}`} onClick={() => { setSelectedGroup("all"); setCollectionsOpen(false); }}><Layers3 size={16} /><span>All ideas</span><small key={wishlist.items.length}>{wishlist.items.length}</small></button>
-              <div className="nav-section-heading"><span>COLLECTIONS</span><span key={wishlist.groups.length}>{wishlist.groups.length}</span></div>
-              <nav className="group-tree mega-tree" aria-label="Wishlist groups">{renderGroupTree()}</nav>
-              <button className="add-group-link" onClick={() => { setGroupEditor(null); setCollectionsOpen(false); }} disabled={Boolean(cacheIssue)}><FolderPlus size={15} /> Create a group</button>
-              <div className="mega-footer">
-                <button className="settings-link" onClick={() => { setSettingsOpen(true); setCollectionsOpen(false); }}><Settings2 size={16} /><span>Preferences</span><ArrowUpRight size={14} /></button>
-                <p className="privacy-note"><ShieldCheck size={13} /> Stored on this device.</p>
-              </div>
-            </aside>
-            <div className="mega-main">
-              <div className="mega-label"><span>QUICK ACTIONS</span></div>
-              <div className="mega-actions">
-                <button type="button" className="mega-tile" onClick={() => { addNewItem(); setCollectionsOpen(false); }} disabled={!wishlist.groups.length || Boolean(cacheIssue)}><span className="mega-tile-icon"><Plus size={17} /></span><span className="mega-tile-text"><b>Add idea</b><small>Save something new.</small></span></button>
-                <button type="button" className="mega-tile" onClick={() => { setGroupEditor(null); setCollectionsOpen(false); }} disabled={Boolean(cacheIssue)}><span className="mega-tile-icon"><FolderPlus size={17} /></span><span className="mega-tile-text"><b>New collection</b><small>Group ideas together.</small></span></button>
-                <button type="button" className="mega-tile" onClick={() => { setCollectionsOpen(false); importInputRef.current?.click(); }} disabled={Boolean(cacheIssue)}><span className="mega-tile-icon"><FileUp size={17} /></span><span className="mega-tile-text"><b>Import</b><small>From markdown or CSV.</small></span></button>
-              </div>
-              <div className="mega-label"><span>CURRENT VIEW</span><span>{selectedGroupData?.name || "All ideas"}</span></div>
-              <p className="mega-hint">Pick a collection on the left to filter the page.</p>
-            </div>
-          </div></div>
-        </div>
+        <Sidebar
+          wishlistGroups={wishlist.groups}
+          selectedGroup={selectedGroup}
+          collectionsOpen={collectionsOpen}
+          cacheIssue={cacheIssue}
+          groupStats={groupStats}
+          collapsedGroups={collapsedGroups}
+          dragGroup={dragGroup}
+          dragOverGroup={dragOverGroup}
+          touchDragGroup={touchDragGroup}
+          dragItem={dragItem}
+          wishlistItemsLength={wishlist.items.length}
+          displayMoney={displayMoney}
+          setSelectedGroup={setSelectedGroup}
+          setCollectionsOpen={setCollectionsOpen}
+          setGroupEditor={setGroupEditor}
+          removeGroup={removeGroup}
+          toggleGroupCollapse={toggleGroupCollapse}
+          addNewItem={addNewItem}
+          setSettingsOpen={setSettingsOpen}
+          importInputRef={importInputRef}
+          handleGroupDragStart={handleGroupDragStart}
+          handleGroupDragEnd={handleGroupDragEnd}
+          handleGroupDragOver={handleGroupDragOver}
+          handleGroupDragLeave={handleGroupDragLeave}
+          handleGroupDrop={handleGroupDrop}
+          handleGroupItemDrop={handleGroupItemDrop}
+          handleTouchStart={handleTouchStart}
+        />
 
         <div className="page-content">
           <div className="dashboard-layout">
@@ -1720,106 +1691,62 @@ function App() {
             </div>
           </section>
 
-          <section className={`wishlist-section ${shoppingListMode ? "shopping-list-mode" : ""}`} aria-labelledby="list-title">
-            <div className="section-top" data-reveal>
-              <div><span className="eyebrow small-eyebrow">IDEAS</span><h2 id="list-title">{selectedGroupData ? "In this collection" : "Your saved ideas"} <span>{filteredItems.length}</span></h2><p>{selectedGroupData ? "Items in this collection." : "Saved items across all collections."}</p></div>
-              <button className="outline-add" onClick={addNewItem} disabled={!wishlist.groups.length || Boolean(cacheIssue)}><Plus size={16} /> Add idea</button>
-            </div>
-
-            {(wishlist.items.length > 0 || search) && <div className="list-controls">
-              <div className="filters" role="group" aria-label="Filter wishlist">
-                {([["all", "Everything"], ["priced", "With a price"], ["unpriced", "No price"], ["priority", "High priority"], ["status", "By status"]] as const).map(([value, label]) => <button key={value} className={`filter-chip ${filter === value ? "active" : ""}`} onClick={() => { setFilter(value); if (value !== "status") setStatusFilter("all"); }} aria-pressed={filter === value}>{label}</button>)}
-                <button className={`filter-chip ${shoppingListMode ? "active" : ""}`} onClick={() => { setShoppingListMode(!shoppingListMode); if (shoppingListMode) { setStatusFilter("all"); setFilter("all"); } else { setStatusFilter("purchased"); setFilter("status"); } }} aria-pressed={shoppingListMode} title="Show only purchased items in a compact checklist">{shoppingListMode ? "📋 Shopping" : "🛒 Shopping list"}</button>
-                <button className={`filter-chip ${statsOpen ? "active" : ""}`} onClick={() => setStatsOpen(true)} aria-pressed={statsOpen}>📊 Stats</button>
-                <button className={`filter-chip ${showFavoritesOnly ? "active" : ""}`} onClick={() => setShowFavoritesOnly(!showFavoritesOnly)} aria-pressed={showFavoritesOnly}>⭐ Favorites</button>
-                <button className={`filter-chip ${goalsOpen ? "active" : ""}`} onClick={() => setGoalsOpen(true)} aria-pressed={goalsOpen}>🎯 Goals</button>
-                <button className={`filter-chip ${shareOpen ? "active" : ""}`} onClick={() => setShareOpen(true)} aria-pressed={shareOpen}>🔗 Share</button>
-              </div>
-              {uniqueTags.length > 0 && <div className="tag-filter-list" role="group" aria-label="Filter by tag">
-                <button className={`tag-filter-chip ${!selectedTag ? "active" : ""}`} onClick={() => setSelectedTag(null)}>All</button>
-                {uniqueTags.map(([tag, count]) => <button key={tag} className={`tag-filter-chip ${selectedTag === tag ? "active" : ""}`} onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}>{tag} <small>({count})</small></button>)}
-              </div>}
-              {filter === "status" && <div className="filters status-filters" role="group" aria-label="Filter by status">
-                {([["all", "All"], ["wanted", "Wanted"], ["researching", "Researching"], ["planned", "Planned"], ["purchased", "Purchased"]] as const).map(([value, label]) => <button key={value} className={`filter-chip ${statusFilter === value ? "active" : ""}`} onClick={() => setStatusFilter(value as StatusFilter)} aria-pressed={statusFilter === value}>{label}</button>)}
-              </div>}
-              <label className="sort-control"><ArrowDown size={14} /><select value={sort} onChange={(event) => setSort(event.target.value as Sort)} aria-label="Sort wishlist"><option value="recent">Recently added</option><option value="date-added">Date added</option><option value="name">Name A–Z</option><option value="price">Lowest price</option><option value="price-desc">Highest price</option><option value="priority">Priority</option><option value="status">Status</option></select></label>
-            </div>}
-            {selectedItems.size > 0 && <div className="bulk-bar" role="toolbar" aria-label="Bulk actions">
-              <span className="bulk-count">{selectedItems.size} selected</span>
-              <button className="secondary-btn bulk-btn" onClick={selectAllItems}>Select all</button>
-              <button className="secondary-btn bulk-btn" onClick={() => bulkSetStatus("wanted")}>Wanted</button>
-              <button className="secondary-btn bulk-btn" onClick={() => bulkSetStatus("researching")}>Researching</button>
-              <button className="secondary-btn bulk-btn" onClick={() => bulkSetStatus("planned")}>Planned</button>
-              <button className="secondary-btn bulk-btn" onClick={() => bulkSetStatus("purchased")}>Purchased</button>
-              {wishlist.groups.length > 1 && <details className="bulk-move"><summary>Move to…</summary><div className="group-menu">{wishlist.groups.map((group) => <button key={group.id} onClick={() => bulkMoveToGroup(group.id)}>{group.name}</button>)}</div></details>}
-              <button className="secondary-btn bulk-btn danger-text" onClick={bulkRemove}>Remove</button>
-              {selectedItems.size >= 2 && <button className="secondary-btn bulk-btn" onClick={() => setComparisonMode(true)}>Compare</button>}
-              <button className="text-button" onClick={() => setSelectedItems(new Set())}>Clear</button>
-            </div>}
-
-            {visibleItems.length > 0 ? <>
-              <div className="item-grid">
-                {visibleItems.map((item, index) => {
-                  const price = item.priceEur == null || item.currencyUnverified ? null : item.priceEur * (item.quantity || 1);
-                  const converted = price == null ? null : (currency !== "EUR" && rate?.rate ? price * rate.rate : price);
-                  const isSelected = selectedItems.has(item.id);
-                  const isDragging = dragItem === item.id || touchDragItem === item.id;
-                  const isDragOver = dragOverItem === item.id && dragItem !== item.id && touchDragOverItem !== item.id;
-                  const priceAlert = item.targetPrice != null && item.targetPrice > 0 && item.priceEur != null && !item.currencyUnverified && item.priceEur <= item.targetPrice;
-                  return <article className={`item-card ${isSelected ? "selected" : ""} ${isDragging ? "dragging" : ""} ${isDragOver ? "drag-over" : ""} ${priceAlert ? "price-alert" : ""}`}
-                    draggable
-                    data-touch-id={item.id}
-                    onDragStart={(e) => handleItemDragStart(e, item.id)}
-                    onDragEnd={handleItemDragEnd}
-                    onDragOver={(e) => handleItemDragOver(e, item.id)}
-                    onDragLeave={handleItemDragLeave}
-                    onDrop={(e) => handleItemDrop(e, item.id)}
-                    onTouchStart={(e) => handleTouchStart(e, 'item', item.id)}
-                    data-reveal key={item.id} style={{ "--reveal-delay": `${Math.min(index * 65, 325)}ms` } as React.CSSProperties}>
-                    {item.imageUrl && <div className="item-image"><img src={item.imageUrl} alt={item.name} loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>}
-                    <div className="item-card-top">
-                      <label className="item-checkbox"><input type="checkbox" checked={isSelected} onChange={() => toggleSelectItem(item.id)} /><span><Check size={12} /></span></label>
-                      <button className={`icon-btn item-fav-btn ${item.favorited ? "favorited" : ""}`} onClick={() => toggleFavorite(item.id)} aria-label={item.favorited ? "Remove from favorites" : "Add to favorites"} title={item.favorited ? "Unfavorite" : "Favorite"}><Heart size={14} fill={item.favorited ? "currentColor" : "none"} /></button>
-                      <span className={`item-symbol ${item.currencyUnverified ? "unverified" : ""}`}><ShoppingBag size={17} /></span><div className="item-badges">{item.priority && <span className={`priority-tag ${item.priority.toLowerCase()}`}>{item.priority}</span>}{item.tags?.length && item.tags.map((tag) => <span key={tag} className="tag-tag">{tag}</span>)}{item.status && item.status !== "wanted" && <span className="status-tag">{item.status}</span>}{priceAlert && <span className="alert-tag" title={`Price ${formatMoney(item.priceEur ?? 0, "EUR")} is at or below your target ${formatMoney(item.targetPrice ?? 0, "EUR")}`}>🔔 Deal!</span>}</div>
-                      <details className="item-more"><summary aria-label={`Actions for ${item.name}`}><MoreHorizontal size={17} /></summary><div className="group-menu"><button disabled={Boolean(cacheIssue)} onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); setItemEditor(item); }}><Pencil size={14} /> Edit idea</button><button disabled={Boolean(cacheIssue)} onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); duplicateItem(item); }}><Copy size={14} /> Duplicate</button><button disabled={Boolean(cacheIssue)} className="danger-text" onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); removeItem(item); }}><Trash2 size={14} /> Remove…</button></div></details>
-                    </div>
-                    <h3>{item.name}</h3>
-                    {(item.brandModel || item.subgroup) && <p className="item-subtitle">{[item.brandModel, item.subgroup].filter(Boolean).join(" · ")}</p>}
-                    {item.notes && <p className="item-note">{item.notes}</p>}
-                    {item.blockedBy && <p className="item-dependency" title={`Blocked by: ${item.blockedBy}`}>⛔ Blocked by: {item.blockedBy}</p>}
-                    <div className="item-card-bottom">
-                      <div className="item-group"><span>{parentLabel(wishlist.groups, item.groupId)}</span>{item.quantity && item.quantity > 1 && <small>× {item.quantity}</small>}</div>
-                      <div className="item-price">
-                        {item.currencyUnverified
-                          ? <><strong className="price-unverified">{item.unverifiedAmount == null ? "Price?" : `${item.unverifiedAmount.toLocaleString()} ?`}</strong><small>Currency unverified</small></>
-                          : item.priceEur == null
-                            ? <><strong className="price-pending">Not priced</strong><small>A wish, not a promise</small></>
-                            : <><strong>{converted == null ? formatMoney(price!, "EUR") : formatMoney(converted, currency)}</strong><small>{currency === "EUR" ? "EUR estimate" : `from ${formatMoney(price!, "EUR")}`}</small></>}
-                        {item.targetPrice != null && item.targetPrice > 0 && <small className="target-price-note">Target: {formatMoney(item.targetPrice, "EUR")}</small>}
-                        {item.priceHistory && item.priceHistory.length > 1 && <span className="sparkline sparkline-clickable" title={`Price history: ${item.priceHistory.map((p: {price: number; date: number}) => `${formatMoney(p.price, "EUR")} on ${new Date(p.date).toLocaleDateString()}`).join(", ")}`} onClick={() => setTimelineItem(item)} style={{cursor: 'pointer'}}>
-                          <svg viewBox="0 0 60 20" width="60" height="20">
-                            {(() => {
-                              const prices = item.priceHistory.map((p: {price: number; date: number}) => p.price);
-                              const min = Math.min(...prices);
-                              const max = Math.max(...prices);
-                              const range = max - min || 1;
-                              const points = item.priceHistory.map((p: {price: number; date: number}, i: number) => `${(i / (item.priceHistory!.length - 1)) * 56},${18 - ((p.price - min) / range) * 16}`).join(" ");
-                              return <polyline points={`2,18 ${points}`} fill="none" stroke="var(--green)" strokeWidth="2" />;
-                            })()}
-                          </svg>
-                        </span>}
-                      </div>
-                    </div>
-                    {safeLink(item.link) && <a className="item-link" href={safeLink(item.link)} target="_blank" rel="noreferrer"><Link2 size={13} /> Visit the link <ArrowUpRight size={13} /></a>}
-                  </article>;
-                })}
-              </div>
-              {filteredItems.length > visibleItems.length && <button className="load-more" onClick={() => setItemsToShow((count) => count + 30)}>Load more ({filteredItems.length - visibleItems.length}) <ChevronDown size={15} /></button>}
-              {itemsToShow > 30 && filteredItems.length > 30 && <button className="load-more" onClick={() => setItemsToShow(30)}>Show fewer <ArrowDown size={14} /></button>}
-            </>             : wishlist.groups.length === 0 ? <div className="empty-state first-run" data-reveal><span className="empty-illustration"><Compass size={29} /></span><span className="eyebrow small-eyebrow">GET STARTED</span><h3>Create your first collection</h3><p>Collections keep related ideas together. Your wishlist is saved in this browser, with folder backups available in preferences.</p><button className="primary-btn" disabled={Boolean(cacheIssue)} onClick={() => setGroupEditor(null)}><FolderPlus size={16} /> Create a collection</button><button className="empty-import" disabled={Boolean(cacheIssue)} onClick={() => importInputRef.current?.click()}><FileUp size={15} /> Import a list</button></div>
-              : search || filter !== "all" ? <div className="empty-state compact-empty" data-reveal><span className="empty-illustration"><Search size={24} /></span><h3>No matching items</h3><p>Change your search or filters.</p><button className="text-button" onClick={() => { setSearch(""); setFilter("all"); }}>Clear search and filters</button></div>
-                : <div className="empty-state compact-empty" data-reveal><span className="empty-illustration"><Heart size={24} /></span><h3>No ideas in this collection</h3><p>Add an idea to this collection.</p><button className="primary-btn" onClick={addNewItem}><Plus size={16} /> Add an idea</button></div>}
-          </section>
+          <ItemList
+            filteredItems={filteredItems}
+            visibleItems={visibleItems}
+            selectedItems={selectedItems}
+            dragItem={dragItem}
+            dragOverItem={dragOverItem}
+            touchDragItem={touchDragItem}
+            currency={currency}
+            rate={rate}
+            sort={sort}
+            filter={filter}
+            statusFilter={statusFilter}
+            search={search}
+            wishlistGroups={wishlist.groups}
+            itemsToShow={itemsToShow}
+            selectedTag={selectedTag}
+            uniqueTags={uniqueTags}
+            shoppingListMode={shoppingListMode}
+            showFavoritesOnly={showFavoritesOnly}
+            statsOpen={statsOpen}
+            goalsOpen={goalsOpen}
+            shareOpen={shareOpen}
+            cacheIssue={cacheIssue}
+            parentLabelFn={parentLabel}
+            setFilter={setFilter}
+            setStatusFilter={setStatusFilter}
+            setSort={setSort}
+            setSelectedTag={setSelectedTag}
+            setShoppingListMode={setShoppingListMode}
+            setShowFavoritesOnly={setShowFavoritesOnly}
+            setStatsOpen={setStatsOpen}
+            setGoalsOpen={setGoalsOpen}
+            setShareOpen={setShareOpen}
+            setItemsToShow={setItemsToShow}
+            setSearch={setSearch}
+            addNewItem={addNewItem}
+            toggleSelectItem={toggleSelectItem}
+            selectAllItems={selectAllItems}
+            bulkSetStatus={bulkSetStatus}
+            bulkMoveToGroup={bulkMoveToGroup}
+            bulkRemove={bulkRemove}
+            setComparisonMode={setComparisonMode}
+            setSelectedItems={setSelectedItems}
+            toggleFavorite={toggleFavorite}
+            setItemEditor={setItemEditor}
+            duplicateItem={duplicateItem}
+            removeItem={removeItem}
+            setTimelineItem={setTimelineItem}
+            importInputRef={importInputRef}
+            handleItemDragStart={handleItemDragStart}
+            handleItemDragEnd={handleItemDragEnd}
+            handleItemDragOver={handleItemDragOver}
+            handleItemDragLeave={handleItemDragLeave}
+            handleItemDrop={handleItemDrop}
+            handleTouchStart={handleTouchStart}
+          />
 
           <footer className="page-footer" data-reveal><span><ShieldCheck size={14} /> Saved in your browser; no account is required.</span><button onClick={() => setSettingsOpen(true)}><CircleHelp size={14} /> Storage & privacy</button></footer>
             </div>
@@ -1859,267 +1786,11 @@ function App() {
       {groupEditor !== undefined && <GroupDialog group={groupEditor} groups={wishlist.groups} initialParent={groupEditor === null && selectedGroup !== "all" ? selectedGroup : undefined} onClose={() => setGroupEditor(undefined)} onSave={saveGroup} />}
       {importResults && <ImportDialog results={importResults} error={importError} onToggle={toggleImport} onClose={() => { setImportResults(null); setImportFiles([]); setImportError(""); }} onImport={importSelected} onChooseMore={() => importInputRef.current?.click()} aiConnected={activeAiConnected} aiModel={activeAiModel} aiDestination={activeAiDestination} aiBusy={ollamaImportBusy} onImprove={() => void improveImports()} />}
 
-      {shareOpen && <DialogFrame className="share-dialog" labelledBy="share-title" onClose={() => setShareOpen(false)}>
-        <ModalHeading eyebrow="SHARE YOUR WISHLIST" title="Share with others" id="share-title" onClose={() => setShareOpen(false)} />
-        <p className="settings-copy">Generate a shareable link containing your wishlist data. Anyone with the link can view a read-only copy.</p>
-        <div className="share-section">
-          <label className="field"><span>Share link</span>
-            <input className="share-url" readOnly value={(() => {
-              try {
-                const data = btoa(JSON.stringify(wishlist));
-                return `${window.location.origin}${window.location.pathname}#share=${data}`;
-              } catch { return "Could not generate share link."; }
-            })()} onClick={(e) => (e.target as HTMLInputElement).select()} />
-          </label>
-          <div className="share-actions">
-            <button className="secondary-btn" onClick={() => {
-              navigator.clipboard?.writeText((document.querySelector('.share-url') as HTMLInputElement)?.value || '');
-              setNotice("Share link copied to clipboard.");
-            }}>📋 Copy link</button>
-            <button className="secondary-btn" onClick={() => {
-              const data = JSON.stringify(wishlist);
-              const blob = new Blob([data], { type: 'application/json' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = 'Trinity-wishlist.json';
-              a.click();
-              URL.revokeObjectURL(url);
-            }}>📁 Download JSON</button>
-          </div>
-        </div>
-        <div className="modal-actions"><button type="button" className="text-button" onClick={() => setShareOpen(false)}>Close</button></div>
-      </DialogFrame>}
-      {comparisonMode && comparisonItems.length >= 2 && <DialogFrame className="comparison-dialog" labelledBy="comparison-title" onClose={() => setComparisonMode(false)}>
-        <ModalHeading eyebrow="SIDE BY SIDE" title={`Compare ${comparisonItems.length} items`} id="comparison-title" onClose={() => setComparisonMode(false)} />
-        <div className="comparison-table-wrapper">
-          <table className="comparison-table">
-            <thead>
-              <tr><th>Detail</th>{comparisonItems.map((item) => <th key={item.id} className="comparison-item-header"><strong>{item.name}</strong></th>)}</tr>
-            </thead>
-            <tbody>
-              <tr><td>Group</td>{comparisonItems.map((item) => { const g = wishlist.groups.find((gr) => gr.id === item.groupId); return <td key={item.id}>{g?.name || "N/A"}</td>; })}</tr>
-                <tr><td>Subgroup</td>{comparisonItems.map((item) => <td key={item.id}>{item.subgroup || "N/A"}</td>)}</tr>
-                <tr><td>Brand / Model</td>{comparisonItems.map((item) => <td key={item.id}>{item.brandModel || "N/A"}</td>)}</tr>
-                <tr><td>Quantity</td>{comparisonItems.map((item) => <td key={item.id}>{item.quantity || 1}</td>)}</tr>
-                <tr><td>Price (EUR)</td>{comparisonItems.map((item) => <td key={item.id}>{item.priceEur != null ? `${item.priceEur.toFixed(2)} €` : "Not priced"}</td>)}</tr>
-                <tr><td>Status</td>{comparisonItems.map((item) => <td key={item.id}>{item.status || "Wanted"}</td>)}</tr>
-                <tr><td>Priority</td>{comparisonItems.map((item) => <td key={item.id}>{item.priority || "N/A"}</td>)}</tr>
-                <tr><td>Tags</td>{comparisonItems.map((item) => <td key={item.id}>{item.tags?.length ? item.tags.join(", ") : "N/A"}</td>)}</tr>
-                <tr><td>Notes</td>{comparisonItems.map((item) => <td key={item.id} className="comparison-notes">{item.notes || "N/A"}</td>)}</tr>
-                <tr><td>Link</td>{comparisonItems.map((item) => <td key={item.id}>{item.link ? <a href={item.link} target="_blank" rel="noreferrer">Visit link</a> : "N/A"}</td>)}</tr>
-            </tbody>
-          </table>
-        </div>
-        <div className="modal-actions"><button type="button" className="text-button" onClick={() => setComparisonMode(false)}>Close</button></div>
-      </DialogFrame>}
-      {timelineItem && timelineItem.priceHistory && timelineItem.priceHistory.length > 1 && <DialogFrame className="timeline-dialog" labelledBy="timeline-title" onClose={() => setTimelineItem(null)}>
-        <ModalHeading eyebrow="PRICE HISTORY" title={`${timelineItem.name} timeline`} id="timeline-title" onClose={() => setTimelineItem(null)} />
-        <div className="timeline-chart">
-          {(() => {
-            const history = timelineItem.priceHistory!;
-            const prices = history.map((p: {price: number; date: number}) => p.price);
-            const min = Math.min(...prices);
-            const max = Math.max(...prices);
-            const range = max - min || 1;
-            const width = 500;
-            const height = 200;
-            const padding = 30;
-            const chartW = width - padding * 2;
-            const chartH = height - padding * 2;
-            const points = history.map((p: {price: number; date: number}, i: number) => ({
-              x: padding + (i / (history.length - 1)) * chartW,
-              y: padding + chartH - ((p.price - min) / range) * chartH,
-              price: p.price,
-              date: p.date
-            }));
-            const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-            const areaPath = linePath + ` L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`;
-            return (
-              <svg viewBox={`0 0 ${width} ${height}`} className="timeline-svg">
-                <defs>
-                  <linearGradient id="timelineGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--green)" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="var(--green)" stopOpacity="0.02" />
-                  </linearGradient>
-                </defs>
-                {/* Grid lines */}
-                {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
-                  const y = padding + chartH * (1 - frac);
-                  const price = min + range * frac;
-                  return (
-                    <g key={frac}>
-                      <line x1={padding} y1={y} x2={width - padding} y2={y} stroke="var(--line)" strokeWidth="1" strokeDasharray="4,4" />
-                      <text x={padding - 5} y={y + 4} textAnchor="end" fontSize="9" fill="var(--muted)">{price.toFixed(0)}€</text>
-                    </g>
-                  );
-                })}
-                {/* Area fill */}
-                <path d={areaPath} fill="url(#timelineGrad)" />
-                {/* Line */}
-                <path d={linePath} fill="none" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                {/* Data points */}
-                {points.map((p, i) => (
-                  <g key={i}>
-                    <circle cx={p.x} cy={p.y} r="4" fill="var(--green)" stroke="var(--paper)" strokeWidth="2" />
-                    <title>{`${formatMoney(p.price, "EUR")} on ${new Date(p.date).toLocaleDateString()}`}</title>
-                  </g>
-                ))}
-                {/* X-axis labels */}
-                {points.filter((_, i) => i === 0 || i === points.length - 1 || (points.length <= 6 && true)).map((p, i) => (
-                  <text key={i} x={p.x} y={height - 5} textAnchor="middle" fontSize="9" fill="var(--muted)">
-                    {new Date(p.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                  </text>
-                ))}
-              </svg>
-            );
-          })()}
-        </div>
-        <div className="timeline-stats">
-          {(() => {
-            const history = timelineItem.priceHistory!;
-            const prices = history.map((p: {price: number; date: number}) => p.price);
-            const min = Math.min(...prices);
-            const max = Math.max(...prices);
-            const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
-            const current = timelineItem.priceEur;
-            return (
-              <>
-                <div className="timeline-stat"><span className="timeline-stat-label">Current</span><span className="timeline-stat-value">{current != null ? formatMoney(current, "EUR") : "Not priced"}</span></div>
-                <div className="timeline-stat"><span className="timeline-stat-label">Lowest</span><span className="timeline-stat-value">{formatMoney(min, "EUR")}</span></div>
-                <div className="timeline-stat"><span className="timeline-stat-label">Highest</span><span className="timeline-stat-value">{formatMoney(max, "EUR")}</span></div>
-                <div className="timeline-stat"><span className="timeline-stat-label">Average</span><span className="timeline-stat-value">{formatMoney(avg, "EUR")}</span></div>
-                <div className="timeline-stat"><span className="timeline-stat-label">Data points</span><span className="timeline-stat-value">{history.length}</span></div>
-              </>
-            );
-          })()}
-        </div>
-        <div className="modal-actions"><button type="button" className="text-button" onClick={() => setTimelineItem(null)}>Close</button></div>
-      </DialogFrame>}
-      {statsOpen && <DialogFrame className="stats-dialog" labelledBy="stats-title" onClose={() => setStatsOpen(false)}>
-        <ModalHeading eyebrow="INSIGHTS" title="Wishlist statistics" id="stats-title" onClose={() => setStatsOpen(false)} />
-        <div className="stats-grid">
-          <div className="stat-card"><div className="stat-label">Total items</div><div className="stat-value">{wishlist.items.length}</div></div>
-          <div className="stat-card"><div className="stat-label">Total value</div><div className="stat-value">{formatMoney(verifiedEuroTotal(wishlist.items), "EUR")}</div></div>
-          <div className="stat-card"><div className="stat-label">Purchased</div><div className="stat-value">{wishlist.items.filter(i => i.status === "purchased").length}</div></div>
-          <div className="stat-card"><div className="stat-label">Groups</div><div className="stat-value">{wishlist.groups.length}</div></div>
-        </div>
-        <div className="chart-container">
-          <div className="chart-title">Spending by group</div>
-          <svg className="chart-svg" viewBox="0 0 600 200">
-            {(() => {
-              const groupTotals = wishlist.groups.map(g => ({
-                name: g.name,
-                total: verifiedEuroTotal(wishlist.items.filter(i => i.groupId === g.id))
-              })).sort((a, b) => b.total - a.total).slice(0, 8);
-              if (groupTotals.length === 0) return <text x="300" y="100" textAnchor="middle" fill="var(--muted)">No data</text>;
-              const maxTotal = Math.max(...groupTotals.map(g => g.total), 1);
-              const barWidth = 50;
-              const gap = 20;
-              return groupTotals.map((g, i) => {
-                const barHeight = (g.total / maxTotal) * 160;
-                const x = 40 + i * (barWidth + gap);
-                const y = 180 - barHeight;
-                return (
-                  <g key={g.name}>
-                    <rect x={x} y={y} width={barWidth} height={barHeight} fill="var(--green)" rx="4" />
-                    <text x={x + barWidth / 2} y={y - 5} textAnchor="middle" fontSize="10" fill="var(--ink)">{g.total.toFixed(0)}€</text>
-                    <text x={x + barWidth / 2} y={195} textAnchor="middle" fontSize="9" fill="var(--muted)">{g.name.length > 8 ? g.name.slice(0, 8) + '…' : g.name}</text>
-                  </g>
-                );
-              });
-            })()}
-          </svg>
-        </div>
-        <div className="chart-container">
-          <div className="chart-title">Items by status</div>
-          <svg className="chart-svg" viewBox="0 0 600 200">
-            {(() => {
-              const statusCounts = [
-                { status: "Wanted", count: wishlist.items.filter(i => (i.status || "wanted") === "wanted").length, color: "var(--green)" },
-                { status: "Researching", count: wishlist.items.filter(i => i.status === "researching").length, color: "var(--warning)" },
-                { status: "Planned", count: wishlist.items.filter(i => i.status === "planned").length, color: "var(--line-strong)" },
-                { status: "Purchased", count: wishlist.items.filter(i => i.status === "purchased").length, color: "var(--faint)" }
-              ];
-              const totalCount = wishlist.items.length || 1;
-              let currentAngle = 0;
-              const cx = 150, cy = 100, r = 80;
-              const slices = statusCounts.filter(s => s.count > 0).map(s => {
-                const angle = (s.count / totalCount) * 2 * Math.PI;
-                const start = currentAngle;
-                currentAngle += angle;
-                return { ...s, start, angle };
-              });
-              if (slices.length === 0) return <text x="300" y="100" textAnchor="middle" fill="var(--muted)">No data</text>;
-              return (
-                <>
-                  {slices.map((s, i) => {
-                    const x1 = cx + r * Math.cos(s.start);
-                    const y1 = cy + r * Math.sin(s.start);
-                    const x2 = cx + r * Math.cos(s.start + s.angle);
-                    const y2 = cy + r * Math.sin(s.start + s.angle);
-                    const largeArc = s.angle > Math.PI ? 1 : 0;
-                    const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
-                    return <path key={s.status} d={path} fill={s.color} />;
-                  })}
-                  <g transform="translate(320, 40)">
-                    {slices.map((s, i) => (
-                      <g key={s.status} transform={`translate(0, ${i * 30})`}>
-                        <rect width="12" height="12" fill={s.color} rx="2" />
-                        <text x="20" y="10" fontSize="11" fill="var(--ink)">{s.status}: {s.count}</text>
-                      </g>
-                    ))}
-                  </g>
-                </>
-              );
-            })()}
-          </svg>
-        </div>
-        <div className="modal-actions"><button type="button" className="text-button" onClick={() => setStatsOpen(false)}>Close</button></div>
-      </DialogFrame>}
-      {goalsOpen && <DialogFrame className="goals-dialog" labelledBy="goals-title" onClose={() => setGoalsOpen(false)}>
-        <ModalHeading eyebrow="WISHLIST GOALS" title="Track your progress" id="goals-title" onClose={() => setGoalsOpen(false)} />
-        <p className="settings-copy">Set a goal to track how many items you want to purchase or how much you want to spend.</p>
-        <div className="goals-section">
-          <div className="field-grid">
-            <label className="field"><span>Target items</span><input type="number" min="1" max="1000" value={wishlistGoal?.target || ""} onChange={(event) => {
-              const v = event.target.value.trim() === "" ? null : Number(event.target.value);
-              const newGoal = v ? { target: v, deadline: wishlistGoal?.deadline } : null;
-              setWishlistGoal(newGoal);
-              try { localStorage.setItem("wishr-goal", newGoal ? JSON.stringify(newGoal) : ""); } catch {}
-            }} placeholder="How many items?" /></label>
-            <label className="field"><span>Deadline <i>Optional</i></span><input type="date" value={wishlistGoal?.deadline || ""} onChange={(event) => {
-              const newGoal = wishlistGoal ? { ...wishlistGoal, deadline: event.target.value || undefined } : null;
-              setWishlistGoal(newGoal);
-              try { localStorage.setItem("wishr-goal", newGoal ? JSON.stringify(newGoal) : ""); } catch {}
-            }} /></label>
-          </div>
-          {wishlistGoal && wishlistGoal.target > 0 && (() => {
-            const purchased = wishlist.items.filter(i => i.status === "purchased").length;
-            const percentage = Math.min((purchased / wishlistGoal.target) * 100, 100);
-            const barClass = percentage >= 100 ? "" : percentage >= 70 ? "warning" : "";
-            const daysLeft = wishlistGoal.deadline ? Math.max(0, Math.ceil((new Date(wishlistGoal.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null;
-            return (
-              <div className="goal-progress">
-                <div className="goal-label">
-                  <span>{purchased} of {wishlistGoal.target} items purchased</span>
-                  <span>{percentage.toFixed(0)}%{daysLeft != null ? ` · ${daysLeft} days left` : ""}</span>
-                </div>
-                <div className="goal-bar"><div className={`goal-bar-fill ${barClass}`} style={{ width: `${percentage}%` }} /></div>
-                {percentage >= 100 && <p className="goal-complete">🎉 Goal achieved! Congratulations!</p>}
-                {daysLeft != null && daysLeft <= 7 && daysLeft > 0 && <p className="goal-warning">⏰ Only {daysLeft} days remaining!</p>}
-                {daysLeft === 0 && <p className="goal-expired">⏰ Deadline has passed!</p>}
-              </div>
-            );
-          })()}
-          {wishlistGoal && <button className="text-button danger-text" onClick={() => {
-            setWishlistGoal(null);
-            try { localStorage.removeItem("wishr-goal"); } catch {}
-            setNotice("Goal cleared.");
-          }}>Clear goal</button>}
-        </div>
-        <div className="modal-actions"><button type="button" className="text-button" onClick={() => setGoalsOpen(false)}>Close</button></div>
-      </DialogFrame>}
+      <ShareDialog isOpen={shareOpen} wishlist={wishlist} onClose={() => setShareOpen(false)} onNotice={setNotice} />
+      <ComparisonView isOpen={comparisonMode} wishlist={wishlist} comparisonItems={comparisonItems} onClose={() => setComparisonMode(false)} />
+      <TimelineDialog item={timelineItem} onClose={() => setTimelineItem(null)} />
+      <StatsDialog isOpen={statsOpen} wishlist={wishlist} onClose={() => setStatsOpen(false)} />
+      <GoalsDialog isOpen={goalsOpen} wishlist={wishlist} wishlistGoal={wishlistGoal} onClose={() => setGoalsOpen(false)} setWishlistGoal={setWishlistGoal} onNotice={setNotice} />
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)}>
         <SettingsSection icon={<FolderOpen size={17} />} title="Your wishlist file" description={folderName ? `A private wishlist.json in ${folderName}` : "Choose a folder to keep your own copy on this device."}>
           <p className="settings-copy">Trinity keeps a browser copy as you make changes. Where your browser allows it, a folder adds a portable <code>wishlist.json</code> that autosaves. Restoring a file merges unique groups and items instead of replacing your list.</p>
