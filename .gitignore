@@ -6,3 +6,6 @@ frontend/dist/
 frontend/tsconfig.tsbuildinfo
 .vite/
 *.tsbuildinfo
+Desktop/release/
+.idea/
+desktop.ini

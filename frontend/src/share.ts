@@ -1,7 +1,27 @@
 import type { Wishlist } from "./domain";
-import { validateWishlist, emptyWishlist } from "./domain";
+import { validateWishlist } from "./domain";
 
 const MAX_SHARE_ITEMS = 500;
+
+function encodeBase64Url(text: string): string {
+  const bytes = new TextEncoder().encode(text);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function decodeBase64Url(encoded: string): string {
+  const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+  const pad = base64.length % 4 === 0 ? "" : "=".repeat(4 - (base64.length % 4));
+  const binary = atob(base64 + pad);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new TextDecoder().decode(bytes);
+}
 
 /**
  * Encode a wishlist as a URL hash fragment.
@@ -39,7 +59,7 @@ export function encodeShareLink(wishlist: Wishlist): { url: string; tooLarge: bo
       })),
     };
     const json = JSON.stringify(shareData);
-    const encoded = btoa(json);
+    const encoded = encodeBase64Url(json);
     const url = `${window.location.origin}${window.location.pathname}#share=${encoded}`;
     return { url, tooLarge };
   } catch {
@@ -57,7 +77,7 @@ export function parseShareLink(): Wishlist | null {
 
   try {
     const encoded = hash.slice(7); // Remove "#share="
-    const json = atob(encoded);
+    const json = decodeBase64Url(encoded);
     const data = JSON.parse(json);
 
     // Reconstruct the wishlist from the simplified format
@@ -116,7 +136,7 @@ export function getShareItemCount(): number | null {
 
   try {
     const encoded = hash.slice(7);
-    const json = atob(encoded);
+    const json = decodeBase64Url(encoded);
     const data = JSON.parse(json);
     return (data.i || []).length;
   } catch {

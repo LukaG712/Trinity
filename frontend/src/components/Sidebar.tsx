@@ -102,10 +102,10 @@ function renderGroupTree(
               onGroupItemDrop?.(group.id, "");
             }
           }}>
-          <button className="group-link" onClick={() => { onSetSelectedGroup?.(group.id); }} title={`${group.name} · ${stats.count} ${stats.count === 1 ? "idea" : "ideas"} · ${displayMoney(stats.total)} estimated total`}>
-            {childGroups && <button className="group-collapse-btn" onClick={(ev) => { ev.stopPropagation(); onToggleCollapse?.(group.id); }} aria-label={isCollapsed ? `Expand ${group.name}` : `Collapse ${group.name}`}>{isCollapsed ? <ChevronDown size={13} /> : <ChevronDown size={13} style={{ transform: 'rotate(180deg)' }} />}</button>}
+          <div className="group-link" role="button" tabIndex={0} onClick={() => { onSetSelectedGroup?.(group.id); }} onKeyDown={(ev) => { if (ev.target === ev.currentTarget && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); onSetSelectedGroup?.(group.id); } }} title={`${group.name} · ${stats.count} ${stats.count === 1 ? "idea" : "ideas"} · ${displayMoney(stats.total)} estimated total`}>
+            {childGroups && <button type="button" className="group-collapse-btn" onClick={(ev) => { ev.stopPropagation(); onToggleCollapse?.(group.id); }} aria-label={isCollapsed ? `Expand ${group.name}` : `Collapse ${group.name}`}>{isCollapsed ? <ChevronDown size={13} /> : <ChevronDown size={13} style={{ transform: 'rotate(180deg)' }} />}</button>}
             <span className="group-glyph" style={group.color ? { '--group-color': group.color } as React.CSSProperties : undefined}><span /></span><span className="group-link-name">{group.name}</span><small key={stats.count}>{stats.count}</small>
-          </button>
+          </div>
           <details className="group-actions"><summary aria-label={`Manage ${group.name}`}><MoreHorizontal size={16} /></summary><div className="group-menu">
             <button onClick={(ev) => { ev.currentTarget.closest("details")?.removeAttribute("open"); onSetGroupEditor?.(group); }}>Edit group</button>
             <button disabled={Boolean(cacheIssue)} onClick={(ev) => { ev.currentTarget.closest("details")?.removeAttribute("open"); onSetGroupEditor?.(null); onSetSelectedGroup?.(group.id); }}>Add subgroup</button>

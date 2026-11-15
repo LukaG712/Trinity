@@ -87,7 +87,7 @@ export function createWishlistZip(wishlist: unknown) {
   u32(endParts, localParts.length);
   u16(endParts, 0);
 
-  return new Blob([new Uint8Array([...localParts, ...centralParts, ...endParts])], { type: "application/zip" });
+  return new Blob([new Uint8Array(localParts), new Uint8Array(centralParts), new Uint8Array(endParts)], { type: "application/zip" });
 }
 
 export function downloadWishlistZip(wishlist: unknown) {

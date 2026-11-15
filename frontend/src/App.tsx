@@ -18,7 +18,8 @@ import { fetchCloudModels, fetchCloudProviders, improveWithCloudModel, fetchSave
 import { loadDirectoryHandle, pickWishlistDirectory, readWishlistFile, removeDirectoryHandle, saveDirectoryHandle, supportsDirectoryPicker, type WishrDirectoryHandle, writeWishlistFile } from "./folderStorage";
 import { downloadWishlistJson, downloadWishlistZip } from "./zipExport";
 import { parseImportFiles, type ImportResult } from "./importer";
-import { emptyWishlist, formatMoney, fuzzyMatch, mergeWishlists, readStoredJson, safeLink, subtreeIds, validateWishlist, verifiedEuroTotal, type ExchangeCurrency, type OllamaConfig, type Rate, type Wishlist, type WishlistGroup, type WishlistItem } from "./domain";
+import { isShareUrl, parseShareLink } from "./share";
+import { emptyWishlist, escapeCsvCell, formatMoney, fuzzyMatch, mergeWishlists, readStoredJson, safeLink, subtreeIds, validateWishlist, verifiedEuroTotal, type ExchangeCurrency, type OllamaConfig, type Rate, type Wishlist, type WishlistGroup, type WishlistItem } from "./domain";
 
 const DEFAULT_OLLAMA_URL = "http://localhost:11434";
 const FALLBACK_CURRENCIES: ExchangeCurrency[] = [
@@ -168,12 +169,16 @@ function App() {
   const [touchDragOverItem, setTouchDragOverItem] = useState<string | null>(null);
   const [touchDragGroup, setTouchDragGroup] = useState<string | null>(null);
   const [touchDragOverGroup, setTouchDragOverGroup] = useState<string | null>(null);
+  const [sharedWishlistMode, setSharedWishlistMode] = useState(false);
+  const sharedWishlistModeRef = useRef(false);
   const actionRevisionRef = useRef(0);
   const toastTimerRef = useRef<number | null>(null);
   const touchCloneRef = useRef<HTMLElement | null>(null);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
   const touchDragType = useRef<'item' | 'group' | null>(null);
   const touchDragId = useRef<string | null>(null);
+  const touchDragOverItemRef = useRef<string | null>(null);
+  const touchDragOverGroupRef = useRef<string | null>(null);
 
   const clearToast = useCallback(() => {
     if (toastTimerRef.current != null) window.clearTimeout(toastTimerRef.current);
@@ -193,6 +198,7 @@ function App() {
   }, []);
 
   const persist = useCallback((next: Wishlist) => {
+    if (sharedWishlistModeRef.current) return;
     if (cacheIssueRef.current && !folderRef.current) {
       setSaveState("error");
       setSaveMessage(cacheIssueRef.current);
@@ -275,6 +281,20 @@ function App() {
     let alive = true;
     const initialRevision = revisionRef.current;
     const load = async () => {
+      if (isShareUrl()) {
+        const shared = parseShareLink();
+        if (shared) {
+          if (!alive) return;
+          sharedWishlistModeRef.current = true;
+          setSharedWishlistMode(true);
+          wishlistRef.current = shared;
+          setWishlist(shared);
+          setSaveState("local");
+          setSaveMessage("Viewing a read-only shared wishlist.");
+          return;
+        }
+        setNotice("This share link is invalid or corrupted.");
+      }
       let starting = wishlistRef.current;
       let cacheProblem = "";
       try {
@@ -1002,17 +1022,17 @@ function App() {
     const rows = wishlist.items.map((item) => {
       const group = wishlist.groups.find((g) => g.id === item.groupId);
       return [
-        `"${(item.name || "").replace(/"/g, '""')}"`,
-        `"${(group?.name || "").replace(/"/g, '""')}"`,
-        `"${(item.subgroup || "").replace(/"/g, '""')}"`,
-        `"${(item.brandModel || "").replace(/"/g, '""')}"`,
+        escapeCsvCell(item.name || ""),
+        escapeCsvCell(group?.name || ""),
+        escapeCsvCell(item.subgroup || ""),
+        escapeCsvCell(item.brandModel || ""),
         item.quantity || 1,
         item.priceEur != null ? item.priceEur : "",
-        `"${(item.status || "wanted").replace(/"/g, '""')}"`,
-        `"${(item.priority || "").replace(/"/g, '""')}"`,
-        `"${(item.tags?.join(", ") || "").replace(/"/g, '""')}"`,
-        `"${(item.link || "").replace(/"/g, '""')}"`,
-        `"${(item.notes || "").replace(/"/g, '""')}"`,
+        escapeCsvCell(item.status || "wanted"),
+        escapeCsvCell(item.priority || ""),
+        escapeCsvCell(item.tags?.join(", ") || ""),
+        escapeCsvCell(item.link || ""),
+        escapeCsvCell(item.notes || ""),
       ].join(",");
     });
     const csv = [headers.join(","), ...rows].join("\n");
@@ -1321,7 +1341,7 @@ function App() {
 
     // Create clone on first significant move
     if (!touchCloneRef.current) {
-      const sourceEl = document.querySelector(`[data-touch-id="${touchDragId.current}"]`) as HTMLElement | null;
+      const sourceEl = document.querySelector(`[data-touch-id="${CSS.escape(touchDragId.current)}"]`) as HTMLElement | null;
       if (sourceEl) {
         createTouchClone(sourceEl);
         // Mark original as dragging
@@ -1361,23 +1381,28 @@ function App() {
     const navGroup = realTarget.closest('.nav-group');
 
     if (touchDragType.current === 'item') {
-      if (itemCard && itemCard !== realTarget.closest(`[data-touch-id="${touchDragId.current}"]`)) {
+      if (itemCard && itemCard !== realTarget.closest(`[data-touch-id="${CSS.escape(touchDragId.current)}"]`)) {
         const dataId = itemCard.getAttribute('data-touch-id');
         if (dataId && dataId !== touchDragId.current) {
+          touchDragOverItemRef.current = dataId;
           setTouchDragOverItem(dataId);
           setDragOverItem(dataId);
         }
       } else if (navGroup) {
         const groupId = navGroup.getAttribute('data-touch-id');
         if (groupId) {
+          touchDragOverItemRef.current = null;
           setTouchDragOverItem(null);
           setDragOverItem(null);
+          touchDragOverGroupRef.current = groupId;
           setTouchDragOverGroup(groupId);
           setDragOverGroup(groupId);
         }
       } else {
+        touchDragOverItemRef.current = null;
         setTouchDragOverItem(null);
         setDragOverItem(null);
+        touchDragOverGroupRef.current = null;
         setTouchDragOverGroup(null);
         setDragOverGroup(null);
       }
@@ -1385,10 +1410,12 @@ function App() {
       if (navGroup) {
         const groupId = navGroup.getAttribute('data-touch-id');
         if (groupId && groupId !== touchDragId.current) {
+          touchDragOverGroupRef.current = groupId;
           setTouchDragOverGroup(groupId);
           setDragOverGroup(groupId);
         }
       } else {
+        touchDragOverGroupRef.current = null;
         setTouchDragOverGroup(null);
         setDragOverGroup(null);
       }
@@ -1403,15 +1430,17 @@ function App() {
 
     const type = touchDragType.current;
     const id = touchDragId.current;
+    const overGroup = touchDragOverGroupRef.current;
+    const overItem = touchDragOverItemRef.current;
 
     if (type === 'item') {
       // Drop item
-      if (touchDragOverGroup) {
+      if (overGroup) {
         // Dropped on a group
-        executeMoveItemToGroup(id, touchDragOverGroup);
-      } else if (touchDragOverItem && touchDragOverItem !== id) {
+        executeMoveItemToGroup(id, overGroup);
+      } else if (overItem && overItem !== id) {
         // Dropped on another item
-        executeItemReorder(id, touchDragOverItem);
+        executeItemReorder(id, overItem);
       }
       setDragItem(null);
       setDragOverItem(null);
@@ -1421,8 +1450,8 @@ function App() {
       setDragOverGroup(null);
     } else if (type === 'group') {
       // Drop group
-      if (touchDragOverGroup && touchDragOverGroup !== id) {
-        executeGroupNest(id, touchDragOverGroup);
+      if (overGroup && overGroup !== id) {
+        executeGroupNest(id, overGroup);
       }
       setDragGroup(null);
       setDragOverGroup(null);
@@ -1434,7 +1463,12 @@ function App() {
     touchDragType.current = null;
     touchDragId.current = null;
     touchStartPos.current = null;
+    touchDragOverItemRef.current = null;
+    touchDragOverGroupRef.current = null;
   };
+
+  const handleTouchEndRef = useRef(handleTouchEnd);
+  handleTouchEndRef.current = handleTouchEnd;
 
   // Global touch listeners for drag continuation
   useEffect(() => {
@@ -1450,7 +1484,7 @@ function App() {
       e.preventDefault();
 
       if (!touchCloneRef.current) {
-        const sourceEl = document.querySelector(`[data-touch-id="${touchDragId.current}"]`) as HTMLElement | null;
+        const sourceEl = document.querySelector(`[data-touch-id="${CSS.escape(touchDragId.current)}"]`) as HTMLElement | null;
         if (sourceEl) {
           createTouchClone(sourceEl);
           if (touchDragType.current === 'item') {
@@ -1485,22 +1519,28 @@ function App() {
         if (itemCard) {
           const dataId = itemCard.getAttribute('data-touch-id');
           if (dataId && dataId !== touchDragId.current) {
+            touchDragOverItemRef.current = dataId;
             setTouchDragOverItem(dataId);
             setDragOverItem(dataId);
+            touchDragOverGroupRef.current = null;
             setTouchDragOverGroup(null);
             setDragOverGroup(null);
           }
         } else if (navGroup) {
           const groupId = navGroup.getAttribute('data-touch-id');
           if (groupId) {
+            touchDragOverItemRef.current = null;
             setTouchDragOverItem(null);
             setDragOverItem(null);
+            touchDragOverGroupRef.current = groupId;
             setTouchDragOverGroup(groupId);
             setDragOverGroup(groupId);
           }
         } else {
+          touchDragOverItemRef.current = null;
           setTouchDragOverItem(null);
           setDragOverItem(null);
+          touchDragOverGroupRef.current = null;
           setTouchDragOverGroup(null);
           setDragOverGroup(null);
         }
@@ -1508,27 +1548,31 @@ function App() {
         if (navGroup) {
           const groupId = navGroup.getAttribute('data-touch-id');
           if (groupId && groupId !== touchDragId.current) {
+            touchDragOverGroupRef.current = groupId;
             setTouchDragOverGroup(groupId);
             setDragOverGroup(groupId);
           }
         } else {
+          touchDragOverGroupRef.current = null;
           setTouchDragOverGroup(null);
           setDragOverGroup(null);
         }
       }
     };
 
+    const onTouchEnd = () => handleTouchEndRef.current();
+
     document.addEventListener('touchmove', onTouchMove, { passive: false });
-    document.addEventListener('touchend', handleTouchEnd);
-    document.addEventListener('touchcancel', handleTouchEnd);
+    document.addEventListener('touchend', onTouchEnd);
+    document.addEventListener('touchcancel', onTouchEnd);
 
     return () => {
       document.removeEventListener('touchmove', onTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-      document.removeEventListener('touchcancel', handleTouchEnd);
+      document.removeEventListener('touchend', onTouchEnd);
+      document.removeEventListener('touchcancel', onTouchEnd);
       removeTouchClone();
     };
-  }, [touchDragType.current, touchDragId.current, touchStartPos.current, touchDragOverItem, touchDragOverGroup, wishlist]);
+  }, []);
 
   const addFiles = async (files: FileList | null) => {
     if (!files?.length) return;
@@ -1676,6 +1720,7 @@ function App() {
         <div className="page-content">
           <div className="dashboard-layout">
             <div className="dashboard-primary">
+          {sharedWishlistMode && <div className="data-warning" role="status"><ShieldCheck size={17} /><span><strong>Viewing a shared wishlist (read-only).</strong> Your saved wishlist in this browser was not modified.</span><button onClick={() => { window.location.hash = ""; window.location.reload(); }}>Exit shared view</button></div>}
           {cacheIssue && <div className="data-warning" role="alert"><ShieldCheck size={17} /><span><strong>Wishlist data needs recovery.</strong> {cacheIssue} Changes are paused to protect your saved data.</span><button onClick={() => setSettingsOpen(true)}>Recovery options</button></div>}
           <section className="welcome" data-reveal>
             <div className="welcome-copy">
@@ -1683,9 +1728,9 @@ function App() {
               <h1>{selectedGroupData ? selectedGroupData.name : "Your wishlist"}</h1>
               <p>Save ideas and keep track of what matters to you.</p>
               <div className="welcome-actions">
-                <button className="primary-btn" onClick={addNewItem} disabled={!wishlist.groups.length || Boolean(cacheIssue)}><Plus size={17} /> Add idea</button>
-                <button className="secondary-btn" onClick={() => setGroupEditor(null)} disabled={Boolean(cacheIssue)}><FolderPlus size={16} /> New collection</button>
-                <button className="secondary-btn" onClick={() => importInputRef.current?.click()} disabled={Boolean(cacheIssue)}><FileUp size={16} /> Import</button>
+                <button className="primary-btn" onClick={addNewItem} disabled={!wishlist.groups.length || Boolean(cacheIssue) || sharedWishlistMode}><Plus size={17} /> Add idea</button>
+                <button className="secondary-btn" onClick={() => setGroupEditor(null)} disabled={Boolean(cacheIssue) || sharedWishlistMode}><FolderPlus size={16} /> New collection</button>
+                <button className="secondary-btn" onClick={() => importInputRef.current?.click()} disabled={Boolean(cacheIssue) || sharedWishlistMode}><FileUp size={16} /> Import</button>
                 <input ref={importInputRef} className="hidden-file-input" type="file" accept=".md,.markdown,.csv,text/markdown,text/csv" multiple onChange={(event) => void addFiles(event.target.files)} />
               </div>
             </div>
@@ -1713,7 +1758,7 @@ function App() {
             statsOpen={statsOpen}
             goalsOpen={goalsOpen}
             shareOpen={shareOpen}
-            cacheIssue={cacheIssue}
+            cacheIssue={sharedWishlistMode ? "Shared wishlist is read-only." : cacheIssue}
             parentLabelFn={parentLabel}
             setFilter={setFilter}
             setStatusFilter={setStatusFilter}
@@ -1739,6 +1784,7 @@ function App() {
             duplicateItem={duplicateItem}
             removeItem={removeItem}
             setTimelineItem={setTimelineItem}
+            setGroupEditor={setGroupEditor}
             importInputRef={importInputRef}
             handleItemDragStart={handleItemDragStart}
             handleItemDragEnd={handleItemDragEnd}

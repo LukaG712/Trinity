@@ -35,7 +35,15 @@ export default function GoalsDialog({ isOpen, wishlist, wishlistGoal, onClose, s
           const purchased = wishlist.items.filter(i => i.status === "purchased").length;
           const percentage = Math.min((purchased / wishlistGoal.target) * 100, 100);
           const barClass = percentage >= 100 ? "" : percentage >= 70 ? "warning" : "";
-          const daysLeft = wishlistGoal.deadline ? Math.max(0, Math.ceil((new Date(wishlistGoal.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null;
+          const daysLeft = (() => {
+            if (!wishlistGoal.deadline) return null;
+            const [y, m, d] = wishlistGoal.deadline.split("-").map(Number);
+            if (!y || !m || !d) return null;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const target = new Date(y, m - 1, d);
+            return Math.max(0, Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+          })();
           return (
             <div className="goal-progress">
               <div className="goal-label">

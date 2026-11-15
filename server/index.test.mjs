@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { after, before, test } from "node:test";
 import { createAppServer } from "./index.mjs";
 
@@ -110,4 +113,83 @@ test("unsupported API routes return a structured 404", async () => {
   const response = await fetch(`${baseUrl}/api/not-a-route`);
   assert.equal(response.status, 404);
   assert.deepEqual(await response.json(), { error: "API route not found." });
+});
+
+test("POST routes require application/json Content-Type and valid Origin", async () => {
+  const wrongContentType = await fetch(`${baseUrl}/api/ai/improve`, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: "{}",
+  });
+  assert.equal(wrongContentType.status, 415);
+
+  const badOrigin = await fetch(`${baseUrl}/api/wishlist/save`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Origin: "https://evil.example",
+    },
+    body: JSON.stringify({ wishlist: { version: 1, groups: [], items: [] } }),
+  });
+  assert.equal(badOrigin.status, 403);
+});
+
+test("TRINITY_SAVE_DIR and legacy Trinity_SAVE_DIR configure saving without leaking server paths", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "trinity-save-"));
+  const origUpper = process.env.TRINITY_SAVE_DIR;
+  const origLegacy = process.env.Trinity_SAVE_DIR;
+  delete process.env.TRINITY_SAVE_DIR;
+  delete process.env.Trinity_SAVE_DIR;
+
+  try {
+    process.env.TRINITY_SAVE_DIR = tempDir;
+    const statusRes = await fetch(`${baseUrl}/api/wishlist/save-status`);
+    assert.equal(statusRes.status, 200);
+    assert.deepEqual(await statusRes.json(), { configured: true });
+
+    const saveRes = await fetch(`${baseUrl}/api/wishlist/save`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: baseUrl,
+      },
+      body: JSON.stringify({ wishlist: { version: 1, groups: [], items: [] } }),
+    });
+    assert.equal(saveRes.status, 200);
+    const body = await saveRes.json();
+    assert.deepEqual(body, { saved: true, filename: "wishlist.json" });
+    assert.equal("path" in body, false);
+
+    delete process.env.TRINITY_SAVE_DIR;
+    process.env.Trinity_SAVE_DIR = tempDir;
+    const legacyStatus = await fetch(`${baseUrl}/api/wishlist/save-status`);
+    assert.deepEqual(await legacyStatus.json(), { configured: true });
+  } finally {
+    if (origUpper === undefined) delete process.env.TRINITY_SAVE_DIR;
+    else process.env.TRINITY_SAVE_DIR = origUpper;
+    if (origLegacy === undefined) delete process.env.Trinity_SAVE_DIR;
+    else process.env.Trinity_SAVE_DIR = origLegacy;
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("TRINITY_STATIC_DIR serves static files with CSP and returns 404 for directories without index.html", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "trinity-static-"));
+  const origStatic = process.env.TRINITY_STATIC_DIR;
+  try {
+    await writeFile(join(tempDir, "index.html"), "<!doctype html><html><body>OK</body></html>");
+    await mkdir(join(tempDir, "subdir"));
+    process.env.TRINITY_STATIC_DIR = tempDir;
+
+    const indexRes = await fetch(`${baseUrl}/`);
+    assert.equal(indexRes.status, 200);
+    assert.ok(indexRes.headers.get("content-security-policy")?.includes("default-src 'self'"));
+
+    const dirRes = await fetch(`${baseUrl}/subdir`);
+    assert.equal(dirRes.status, 404);
+  } finally {
+    if (origStatic === undefined) delete process.env.TRINITY_STATIC_DIR;
+    else process.env.TRINITY_STATIC_DIR = origStatic;
+    await rm(tempDir, { recursive: true, force: true });
+  }
 });
