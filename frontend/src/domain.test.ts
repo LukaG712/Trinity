@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { emptyWishlist, formatMoney, fuzzyMatch, mergeWishlists, readStoredJson, safeLink, subtreeIds, validateWishlist, verifiedEuroTotal } from "./domain";
+import { emptyWishlist, escapeCsvCell, formatMoney, fuzzyMatch, mergeWishlists, readStoredJson, safeLink, subtreeIds, validateWishlist, verifiedEuroTotal } from "./domain";
 
 describe("emptyWishlist", () => {
   it("returns a valid empty wishlist", () => {
@@ -613,3 +613,22 @@ describe("mergeWishlists - extended", () => {
     expect(() => mergeWishlists(primary, secondary)).toThrow();
   });
 });
+
+describe("escapeCsvCell", () => {
+  it("neutralizes formula prefixes =, +, -, @, tab, and CR", () => {
+    expect(escapeCsvCell("=CMD('calc')")).toBe(`"'=CMD('calc')"`);
+    expect(escapeCsvCell("+1+1")).toBe(`"'+1+1"`);
+    expect(escapeCsvCell("-2+3")).toBe(`"'-2+3"`);
+    expect(escapeCsvCell("@SUM(A1:A2)")).toBe(`"'@SUM(A1:A2)"`);
+    expect(escapeCsvCell("\t=1")).toBe(`"'\t=1"`);
+    expect(escapeCsvCell("\r=1")).toBe(`"'\r=1"`);
+  });
+
+  it("escapes embedded double quotes and preserves normal text", () => {
+    expect(escapeCsvCell('Desk "Pro" lamp')).toBe(`"Desk ""Pro"" lamp"`);
+    expect(escapeCsvCell(null)).toBe(`""`);
+    expect(escapeCsvCell(undefined)).toBe(`""`);
+    expect(escapeCsvCell("Normal item")).toBe(`"Normal item"`);
+  });
+});
+

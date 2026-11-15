@@ -260,3 +260,11 @@ export function fuzzyMatch(query: string, text: string): number {
   
   return 0;
 }
+
+export function escapeCsvCell(value: string | number | null | undefined): string {
+  if (value == null) return '""';
+  const raw = String(value);
+  const safe = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
+  return `"${safe.replace(/"/g, '""')}"`;
+}
+

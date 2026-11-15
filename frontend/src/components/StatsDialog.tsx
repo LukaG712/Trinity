@@ -25,6 +25,7 @@ export default function StatsDialog({ isOpen, wishlist, onClose }: StatsDialogPr
         <svg className="chart-svg" viewBox="0 0 600 200">
           {(() => {
             const groupTotals = wishlist.groups.map(g => ({
+              id: g.id,
               name: g.name,
               total: verifiedEuroTotal(wishlist.items.filter(i => i.groupId === g.id))
             })).sort((a, b) => b.total - a.total).slice(0, 8);
@@ -37,7 +38,7 @@ export default function StatsDialog({ isOpen, wishlist, onClose }: StatsDialogPr
               const x = 40 + i * (barWidth + gap);
               const y = 180 - barHeight;
               return (
-                <g key={g.name}>
+                <g key={g.id}>
                   <rect x={x} y={y} width={barWidth} height={barHeight} fill="var(--green)" rx="4" />
                   <text x={x + barWidth / 2} y={y - 5} textAnchor="middle" fontSize="10" fill="var(--ink)">{g.total.toFixed(0)}€</text>
                   <text x={x + barWidth / 2} y={195} textAnchor="middle" fontSize="9" fill="var(--muted)">{g.name.length > 8 ? g.name.slice(0, 8) + '…' : g.name}</text>
@@ -69,15 +70,19 @@ export default function StatsDialog({ isOpen, wishlist, onClose }: StatsDialogPr
             if (slices.length === 0) return <text x="300" y="100" textAnchor="middle" fill="var(--muted)">No data</text>;
             return (
               <>
-                {slices.map((s, i) => {
-                  const x1 = cx + r * Math.cos(s.start);
-                  const y1 = cy + r * Math.sin(s.start);
-                  const x2 = cx + r * Math.cos(s.start + s.angle);
-                  const y2 = cy + r * Math.sin(s.start + s.angle);
-                  const largeArc = s.angle > Math.PI ? 1 : 0;
-                  const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
-                  return <path key={s.status} d={path} fill={s.color} />;
-                })}
+                {slices.length === 1 ? (
+                  <circle cx={cx} cy={cy} r={r} fill={slices[0].color} />
+                ) : (
+                  slices.map((s) => {
+                    const x1 = cx + r * Math.cos(s.start);
+                    const y1 = cy + r * Math.sin(s.start);
+                    const x2 = cx + r * Math.cos(s.start + s.angle);
+                    const y2 = cy + r * Math.sin(s.start + s.angle);
+                    const largeArc = s.angle > Math.PI ? 1 : 0;
+                    const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                    return <path key={s.status} d={path} fill={s.color} />;
+                  })
+                )}
                 <g transform="translate(320, 40)">
                   {slices.map((s, i) => (
                     <g key={s.status} transform={`translate(0, ${i * 30})`}>

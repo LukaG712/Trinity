@@ -24,9 +24,14 @@ export default function ShareDialog({ isOpen, wishlist, onClose, onNotice }: Sha
           <input className="share-url" readOnly value={shareUrl} onClick={(e) => (e.target as HTMLInputElement).select()} />
         </label>
         <div className="share-actions">
-          <button className="secondary-btn" onClick={() => {
-            navigator.clipboard?.writeText(shareUrl);
-            onNotice("Share link copied to clipboard.");
+          <button type="button" className="secondary-btn" onClick={async () => {
+            try {
+              if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+              await navigator.clipboard.writeText(shareUrl);
+              onNotice("Share link copied to clipboard.");
+            } catch {
+              onNotice("Could not copy share link. Please copy it manually.");
+            }
           }}>📋 Copy link</button>
           <button className="secondary-btn" onClick={() => {
             const data = JSON.stringify(wishlist);

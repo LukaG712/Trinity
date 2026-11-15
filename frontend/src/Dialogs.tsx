@@ -85,6 +85,7 @@ export function ItemDialog({ item, groups, onClose, onSave }: {
     if (price != null && (!Number.isFinite(price) || price < 0)) { setError("Enter a valid non-negative EUR estimate."); return; }
     if (!Number.isSafeInteger(quantity) || quantity < 1) { setError("Quantity must be a whole number greater than zero."); return; }
     if (form.link?.trim() && !safeLink(form.link)) { setError("Enter a valid link starting with http:// or https://."); return; }
+    if (form.imageUrl?.trim() && !safeLink(form.imageUrl)) { setError("Enter a valid image URL starting with http:// or https://."); return; }
     onSave({
       ...form,
       name: form.name.trim(),
@@ -92,6 +93,7 @@ export function ItemDialog({ item, groups, onClose, onSave }: {
       quantity,
       priceEur: price,
       link: safeLink(form.link),
+      imageUrl: safeLink(form.imageUrl),
       subgroup: form.subgroup?.trim() || "",
       brandModel: form.brandModel?.trim() || "",
       notes: form.notes?.trim() || "",
@@ -142,10 +144,13 @@ export function ItemDialog({ item, groups, onClose, onSave }: {
             ))}
             <div className="add-note">
               <input type="text" maxLength={500} placeholder="Add a dated note…" onKeyDown={(event) => {
-                if (event.key === "Enter" && event.currentTarget.value.trim()) {
-                  const newEntry = { text: event.currentTarget.value.trim(), date: Date.now() };
-                  set("notesJournal", [...(form.notesJournal || []), newEntry]);
-                  event.currentTarget.value = "";
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  if (event.currentTarget.value.trim()) {
+                    const newEntry = { text: event.currentTarget.value.trim(), date: Date.now() };
+                    set("notesJournal", [...(form.notesJournal || []), newEntry]);
+                    event.currentTarget.value = "";
+                  }
                 }
               }} />
             </div>

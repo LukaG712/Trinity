@@ -1,12 +1,17 @@
-import { createReadStream, writeFile } from "node:fs";
-import { access, stat, mkdir } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { access, stat, mkdir, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const staticRoot = resolve(process.env.Trinity_STATIC_DIR || resolve(root, "frontend", "dist"));
-const saveRoot = process.env.Trinity_SAVE_DIR ? resolve(process.env.Trinity_SAVE_DIR) : null;
+function getStaticRoot() {
+  return resolve(process.env.TRINITY_STATIC_DIR || process.env.Trinity_STATIC_DIR || resolve(root, "frontend", "dist"));
+}
+function getSaveRoot() {
+  const dir = process.env.TRINITY_SAVE_DIR || process.env.Trinity_SAVE_DIR;
+  return dir ? resolve(dir) : null;
+}
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "0.0.0.0";
 const requestLimit = 32_000;
@@ -180,16 +185,49 @@ function getClientAddress(request) {
   return request.socket.remoteAddress || "unknown";
 }
 
+const rateLimitWindowMs = 60 * 60_000;
+
 function checkRateLimit(request) {
   const key = getClientAddress(request);
   const now = Date.now();
+  for (const [bucketKey, entry] of requestBuckets) {
+    if (now - entry.startedAt >= rateLimitWindowMs) {
+      requestBuckets.delete(bucketKey);
+    }
+  }
   const bucket = requestBuckets.get(key);
-  if (!bucket || now - bucket.startedAt >= 60 * 60_000) {
+  if (!bucket) {
     requestBuckets.set(key, { startedAt: now, count: 1 });
     return;
   }
   bucket.count += 1;
   if (bucket.count > 20) throw new HttpError(429, "AI request limit reached. Try again in an hour.");
+}
+
+function validatePostRequest(request) {
+  const mediaType = String(request.headers["content-type"] || "").split(";")[0].trim().toLowerCase();
+  if (mediaType !== "application/json") {
+    throw new HttpError(415, "Content-Type must be application/json.");
+  }
+  const origin = request.headers.origin;
+  if (origin !== undefined) {
+    let originUrl;
+    try {
+      originUrl = new URL(origin);
+    } catch {
+      throw new HttpError(403, "Invalid Origin header.");
+    }
+    const requestHost = request.headers.host;
+    const originHost = originUrl.host;
+    const isLocalhost = originUrl.hostname === "localhost" || originUrl.hostname === "127.0.0.1" || originUrl.hostname === "[::1]";
+    if (requestHost) {
+      if (originHost !== requestHost && !isLocalhost) {
+        throw new HttpError(403, "Origin does not match Host.");
+      }
+    } else if (!isLocalhost) {
+      throw new HttpError(403, "Origin is not allowed.");
+    }
+  }
 }
 
 async function readJson(request) {
@@ -219,6 +257,7 @@ function sendJson(response, status, value) {
 }
 
 async function serveStatic(pathname, request, response) {
+  const staticRoot = getStaticRoot();
   let decoded;
   try {
     decoded = decodeURIComponent(pathname);
@@ -228,10 +267,14 @@ async function serveStatic(pathname, request, response) {
   const requestedPath = decoded === "/" ? "index.html" : decoded.replace(/^\/+/, "");
   let file = resolve(staticRoot, requestedPath);
   if (file !== staticRoot && !file.startsWith(staticRoot + sep)) throw new HttpError(404, "Not found.");
+  let isDirectory = false;
   try {
     await access(file);
-    if ((await stat(file)).isDirectory()) file = resolve(file, "index.html");
-  } catch (error) {
+    if ((await stat(file)).isDirectory()) {
+      isDirectory = true;
+      file = resolve(file, "index.html");
+    }
+  } catch {
     if (extname(requestedPath) || request.headers.accept?.includes("text/html") !== true) {
       throw new HttpError(404, "Not found.");
     }
@@ -240,6 +283,7 @@ async function serveStatic(pathname, request, response) {
   try {
     await access(file);
   } catch {
+    if (isDirectory) throw new HttpError(404, "Not found.");
     throw new HttpError(503, "The Trinity web app has not been built. Run the frontend production build first.");
   }
   const types = {
@@ -255,6 +299,7 @@ async function serveStatic(pathname, request, response) {
   };
   response.writeHead(200, {
     "Content-Type": types[extname(file)] || "application/octet-stream",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; font-src 'self' data:; connect-src 'self' http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "strict-origin-when-cross-origin",
@@ -274,8 +319,14 @@ async function serveStatic(pathname, request, response) {
 
 export function createAppServer() {
   return createServer(async (request, response) => {
-    const pathname = new URL(request.url || "/", "http://localhost").pathname;
     try {
+      let url;
+      try {
+        url = new URL(request.url || "/", "http://localhost");
+      } catch {
+        throw new HttpError(400, "Invalid request URL.");
+      }
+      const pathname = url.pathname;
       if (pathname.startsWith("/api/")) {
         if (request.method === "GET" && pathname === "/api/health") {
           sendJson(response, 200, { status: "ok" });
@@ -286,36 +337,41 @@ export function createAppServer() {
           return;
         }
         if (request.method === "GET" && pathname === "/api/ai/models") {
-          const models = await listProviderModels(new URL(request.url || "/", "http://localhost").searchParams.get("provider"));
+          const models = await listProviderModels(url.searchParams.get("provider"));
           sendJson(response, 200, { models });
           return;
         }
         if (request.method === "POST" && pathname === "/api/ai/improve") {
+          validatePostRequest(request);
           checkRateLimit(request);
           const result = await improveWithProvider(await readJson(request));
           sendJson(response, 200, result);
           return;
         }
         if (request.method === "GET" && pathname === "/api/wishlist/save-status") {
-          sendJson(response, 200, { configured: Boolean(saveRoot) });
+          sendJson(response, 200, { configured: Boolean(getSaveRoot()) });
           return;
         }
         if (request.method === "POST" && pathname === "/api/wishlist/save") {
-          if (!saveRoot) throw new HttpError(503, "Server-side wishlist saving is not configured. Set Trinity_SAVE_DIR on the server.");
+          validatePostRequest(request);
+          const saveRoot = getSaveRoot();
+          if (!saveRoot) throw new HttpError(503, "Server-side wishlist saving is not configured. Set TRINITY_SAVE_DIR on the server.");
           checkRateLimit(request);
           const payload = await readJson(request);
-          if (!payload || typeof payload !== "object" || Array.isArray(payload) || typeof payload.wishlist !== "object") {
+          if (!payload || typeof payload !== "object" || Array.isArray(payload) || typeof payload.wishlist !== "object" || payload.wishlist === null) {
             throw new HttpError(400, "Request body must include a wishlist object.");
           }
           try {
             await mkdir(saveRoot, { recursive: true });
-            const file = resolve(saveRoot, "wishlist.json");
+            const filename = "wishlist.json";
+            const file = resolve(saveRoot, filename);
             if (file !== saveRoot && !file.startsWith(saveRoot + sep)) throw new HttpError(403, "Save path escapes the configured save directory.");
             await writeFile(file, `${JSON.stringify(payload.wishlist, null, 2)}\n`);
-            sendJson(response, 200, { saved: true, path: file });
+            sendJson(response, 200, { saved: true, filename });
           } catch (error) {
             if (error instanceof HttpError) throw error;
-            throw new HttpError(500, `Could not save wishlist to server: ${error instanceof Error ? error.message : String(error)}`);
+            console.error("Could not save wishlist to server:", error);
+            throw new HttpError(500, "Could not save wishlist to server.");
           }
           return;
         }
